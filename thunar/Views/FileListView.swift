@@ -23,6 +23,7 @@ struct FileListView: View {
     @State private var editingItem: FileItem?
     @State private var newItemName = ""
     @State private var selectedFileID: UUID?
+    @FocusState private var isListFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -107,6 +108,42 @@ struct FileListView: View {
             if let errorMessage = fileManager.errorMessage {
                 Text(errorMessage)
             }
+        }
+        .focusable()
+        .focusEffectDisabled()
+        .focused($isListFocused)
+        .onAppear {
+            isListFocused = true
+        }
+        .onKeyPress { keyPress in
+            if editingItem != nil { return .ignored }
+
+            guard keyPress.modifiers.isEmpty, let char = keyPress.characters.first, char.isLetter || char.isNumber else { return .ignored }
+
+            let prefix = String(char).lowercased()
+            let sortedFiles = fileManager.files
+            guard !sortedFiles.isEmpty else { return .ignored }
+
+            var startIndex = 0
+            if let currentId = selectedFileID, let currentIndex = sortedFiles.firstIndex(where: { $0.id == currentId }) {
+                startIndex = currentIndex + 1
+            }
+
+            for i in startIndex ..< sortedFiles.count {
+                if sortedFiles[i].name.lowercased().hasPrefix(prefix) {
+                    selectedFileID = sortedFiles[i].id
+                    return .handled
+                }
+            }
+
+            for i in 0 ..< startIndex {
+                if sortedFiles[i].name.lowercased().hasPrefix(prefix) {
+                    selectedFileID = sortedFiles[i].id
+                    return .handled
+                }
+            }
+
+            return .ignored
         }
     }
 
