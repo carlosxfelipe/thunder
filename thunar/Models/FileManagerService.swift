@@ -131,19 +131,32 @@ class FileManagerService: ObservableObject {
     func createFolder(name: String) {
         let newFolderURL = currentDirectory.appendingPathComponent(name)
 
+        if fileManager.fileExists(atPath: newFolderURL.path) {
+            errorMessage = "Já existe um item com o nome '\(name)' neste local."
+            return
+        }
+
         do {
-            try fileManager.createDirectory(at: newFolderURL, withIntermediateDirectories: true)
+            try fileManager.createDirectory(at: newFolderURL, withIntermediateDirectories: false)
             loadDirectory()
         } catch {
-            print("Error creating folder: \(error)")
+            errorMessage = "Erro ao criar pasta: \(error.localizedDescription)"
         }
     }
 
     func createFile(name: String) {
         let newFileURL = currentDirectory.appendingPathComponent(name)
 
-        fileManager.createFile(atPath: newFileURL.path, contents: nil)
-        loadDirectory()
+        if fileManager.fileExists(atPath: newFileURL.path) {
+            errorMessage = "Já existe um item com o nome '\(name)' neste local."
+            return
+        }
+
+        if fileManager.createFile(atPath: newFileURL.path, contents: nil) {
+            loadDirectory()
+        } else {
+            errorMessage = "Não foi possível criar o arquivo."
+        }
     }
 
     func deleteItem(_ item: FileItem) {
