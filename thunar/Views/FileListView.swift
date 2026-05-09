@@ -192,6 +192,14 @@ struct FileListView: View {
             }
         }
         .contextMenu {
+            Button(action: { showingCreateFolder = true }) {
+                Label("Nova Pasta", systemImage: "folder.badge.plus")
+            }
+            Button(action: { showingCreateFile = true }) {
+                Label("Novo Arquivo", systemImage: "doc.badge.plus")
+            }
+            Divider()
+
             Button(action: { fileManager.pasteItem() }) {
                 Label("Colar", systemImage: "doc.on.clipboard")
             }
@@ -270,6 +278,14 @@ struct FileListView: View {
             .padding(16)
         }
         .contextMenu {
+            Button(action: { showingCreateFolder = true }) {
+                Label("Nova Pasta", systemImage: "folder.badge.plus")
+            }
+            Button(action: { showingCreateFile = true }) {
+                Label("Novo Arquivo", systemImage: "doc.badge.plus")
+            }
+            Divider()
+
             Button(action: { fileManager.pasteItem() }) {
                 Label("Colar", systemImage: "doc.on.clipboard")
             }
