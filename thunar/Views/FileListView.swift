@@ -116,7 +116,7 @@ struct FileListView: View {
             isListFocused = true
         }
         .onKeyPress { keyPress in
-            if editingItem != nil { return .ignored }
+            if editingItem != nil || showingCreateFolder || showingCreateFile { return .ignored }
 
             guard keyPress.modifiers.isEmpty, let char = keyPress.characters.first, char.isLetter || char.isNumber else { return .ignored }
 
