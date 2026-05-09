@@ -23,6 +23,11 @@ class FileManagerService: ObservableObject {
 
     @Published var clipboard: (url: URL, action: ClipboardAction)? = nil
     @Published var errorMessage: String? = nil
+    @Published var showHiddenFiles: Bool = false {
+        didSet {
+            loadDirectory()
+        }
+    }
 
     private let fileManager = FileManager.default
 
@@ -39,10 +44,15 @@ class FileManagerService: ObservableObject {
 
         Task {
             do {
+                var options: FileManager.DirectoryEnumerationOptions = []
+                if !self.showHiddenFiles {
+                    options.insert(.skipsHiddenFiles)
+                }
+
                 let contents = try fileManager.contentsOfDirectory(
                     at: targetURL,
                     includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey, .creationDateKey, .contentModificationDateKey],
-                    options: [.skipsHiddenFiles]
+                    options: options
                 )
 
                 // Processamento pesado (mapeamento e ordenação) em uma thread separada para não travar a UI

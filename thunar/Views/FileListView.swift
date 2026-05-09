@@ -46,20 +46,26 @@ struct FileListView: View {
                 Spacer()
 
                 Picker("View Mode", selection: $viewMode) {
-                    Label("Lista", systemImage: "list.bullet")
+                    Image(systemName: "list.bullet")
                         .tag(ViewMode.list)
-                    Label("Ícones", systemImage: "square.grid.2x2")
+                    Image(systemName: "square.grid.2x2")
                         .tag(ViewMode.icons)
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-                .frame(width: 140)
+                .controlSize(.large)
+                .frame(width: 80)
 
                 Button(action: { fileManager.pasteItem() }) {
                     Image(systemName: "doc.on.clipboard")
                 }
                 .disabled(fileManager.clipboard == nil)
                 .help("Colar")
+
+                Button(action: { fileManager.showHiddenFiles.toggle() }) {
+                    Image(systemName: fileManager.showHiddenFiles ? "eye" : "eye.slash")
+                }
+                .help(fileManager.showHiddenFiles ? "Ocultar arquivos ocultos" : "Mostrar arquivos ocultos")
 
                 Button(action: { showingCreateFolder = true }) {
                     Image(systemName: "folder.badge.plus")
