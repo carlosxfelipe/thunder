@@ -21,6 +21,7 @@ struct ContentView: View {
             }
             .background(Color(NSColor.windowBackgroundColor))
         }
+        .navigationTitle("Thunar")
         .frame(minWidth: 800, minHeight: 600)
     }
 }

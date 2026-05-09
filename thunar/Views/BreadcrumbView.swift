@@ -31,9 +31,8 @@ struct BreadcrumbView: View {
             if index == 0 {
                 // Root or first component
                 Button(action: {
-                    if index < components.count - 1 {
-                        let newPath = "/" + components[1 ... index].joined(separator: "/")
-                        fileManager.navigateTo(URL(fileURLWithPath: newPath))
+                    if !isLast {
+                        fileManager.navigateTo(URL(fileURLWithPath: "/"))
                     }
                 }) {
                     Image(systemName: "house.fill")
