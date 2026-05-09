@@ -8,14 +8,20 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var fileManager = FileManagerService()
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        NavigationSplitView {
+            SidebarView(fileManager: fileManager)
+        } detail: {
+            VStack(spacing: 0) {
+                BreadcrumbView(fileManager: fileManager)
+
+                FileListView(fileManager: fileManager)
+            }
+            .background(Color(NSColor.windowBackgroundColor))
         }
-        .padding()
+        .frame(minWidth: 800, minHeight: 600)
     }
 }
 
