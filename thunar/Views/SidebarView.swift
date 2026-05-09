@@ -20,8 +20,8 @@ struct SidebarView: View {
                 }
             }
         }
-        .onChange(of: selectedItem) { newValue in
-            if let item = newValue {
+        .onChange(of: selectedItem) {
+            if let item = selectedItem {
                 fileManager.navigateTo(item.url)
             }
         }

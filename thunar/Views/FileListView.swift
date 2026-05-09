@@ -52,7 +52,14 @@ struct FileListView: View {
                         .tag(ViewMode.icons)
                 }
                 .pickerStyle(.segmented)
+                .labelsHidden()
                 .frame(width: 140)
+
+                Button(action: { fileManager.pasteItem() }) {
+                    Image(systemName: "doc.on.clipboard")
+                }
+                .disabled(fileManager.clipboard == nil)
+                .help("Colar")
 
                 Button(action: { showingCreateFolder = true }) {
                     Image(systemName: "folder.badge.plus")
@@ -102,6 +109,9 @@ struct FileListView: View {
             TableColumn("Nome") { item in
                 HStack(spacing: 8) {
                     item.icon
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 16, height: 16)
                         .foregroundColor(.accentColor)
                     if editingItem == item {
                         TextField("Nome", text: $newItemName)
@@ -150,6 +160,18 @@ struct FileListView: View {
                 Button(action: { editingItem = item }) {
                     Label("Renomear", systemImage: "pencil")
                 }
+                if item.isDirectory {
+                    Button(action: { fileManager.openInTerminal(url: item.url) }) {
+                        Label("Abrir no Terminal", systemImage: "terminal")
+                    }
+                }
+                Button(action: { fileManager.copyItem(item) }) {
+                    Label("Copiar", systemImage: "doc.on.doc")
+                }
+                Button(action: { fileManager.cutItem(item) }) {
+                    Label("Recortar", systemImage: "scissors")
+                }
+                Divider()
                 Button(action: { fileManager.deleteItem(item) }) {
                     Label("Mover para Lixeira", systemImage: "trash")
                 }
@@ -163,6 +185,16 @@ struct FileListView: View {
                 }
             }
         }
+        .contextMenu {
+            Button(action: { fileManager.pasteItem() }) {
+                Label("Colar", systemImage: "doc.on.clipboard")
+            }
+            .disabled(fileManager.clipboard == nil)
+
+            Button(action: { fileManager.openInTerminal() }) {
+                Label("Abrir no Terminal", systemImage: "terminal")
+            }
+        }
     }
 
     var iconView: some View {
@@ -173,7 +205,9 @@ struct FileListView: View {
                 ForEach(fileManager.files) { item in
                     VStack(spacing: 8) {
                         item.icon
-                            .font(.system(size: 48))
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 56, height: 56)
                             .foregroundColor(.accentColor)
                         Text(item.name)
                             .font(.system(size: 11))
@@ -209,6 +243,18 @@ struct FileListView: View {
                         Button(action: { editingItem = item }) {
                             Label("Renomear", systemImage: "pencil")
                         }
+                        if item.isDirectory {
+                            Button(action: { fileManager.openInTerminal(url: item.url) }) {
+                                Label("Abrir no Terminal", systemImage: "terminal")
+                            }
+                        }
+                        Button(action: { fileManager.copyItem(item) }) {
+                            Label("Copiar", systemImage: "doc.on.doc")
+                        }
+                        Button(action: { fileManager.cutItem(item) }) {
+                            Label("Recortar", systemImage: "scissors")
+                        }
+                        Divider()
                         Button(action: { fileManager.deleteItem(item) }) {
                             Label("Mover para Lixeira", systemImage: "trash")
                         }
@@ -216,6 +262,16 @@ struct FileListView: View {
                 }
             }
             .padding(16)
+        }
+        .contextMenu {
+            Button(action: { fileManager.pasteItem() }) {
+                Label("Colar", systemImage: "doc.on.clipboard")
+            }
+            .disabled(fileManager.clipboard == nil)
+
+            Button(action: { fileManager.openInTerminal() }) {
+                Label("Abrir no Terminal", systemImage: "terminal")
+            }
         }
     }
 }

@@ -16,6 +16,12 @@ class FileManagerService: ObservableObject {
     @Published var selectedFiles: Set<FileItem> = []
     @Published var navigationHistory: [URL] = []
     @Published var historyIndex: Int = 0
+    enum ClipboardAction {
+        case copy
+        case cut
+    }
+
+    @Published var clipboard: (url: URL, action: ClipboardAction)? = nil
     @Published var errorMessage: String? = nil
 
     private let fileManager = FileManager.default
@@ -154,6 +160,45 @@ class FileManagerService: ObservableObject {
         } catch {
             print("Error renaming item: \(error)")
         }
+    }
+
+    func copyItem(_ item: FileItem) {
+        clipboard = (item.url, .copy)
+    }
+
+    func cutItem(_ item: FileItem) {
+        clipboard = (item.url, .cut)
+    }
+
+    func pasteItem() {
+        guard let clipboardItem = clipboard else { return }
+
+        let sourceURL = clipboardItem.url
+        let destinationURL = currentDirectory.appendingPathComponent(sourceURL.lastPathComponent)
+
+        // Evita erro se tentar colar na mesma pasta com o mesmo nome
+        guard sourceURL != destinationURL else { return }
+
+        do {
+            if clipboardItem.action == .copy {
+                try fileManager.copyItem(at: sourceURL, to: destinationURL)
+            } else if clipboardItem.action == .cut {
+                try fileManager.moveItem(at: sourceURL, to: destinationURL)
+                clipboard = nil // Limpa após mover
+            }
+            loadDirectory()
+        } catch {
+            print("Error pasting item: \(error)")
+            errorMessage = "Erro ao colar item: \(error.localizedDescription)"
+        }
+    }
+
+    func openInTerminal(url: URL? = nil) {
+        let targetURL = url ?? currentDirectory
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        process.arguments = ["-a", "Terminal", targetURL.path]
+        try? process.run()
     }
 
     var canGoBack: Bool {
