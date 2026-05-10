@@ -6,8 +6,8 @@
 //
 
 import AppKit
-import QuickLookThumbnailing
 import QuickLook
+import QuickLookThumbnailing
 import SwiftUI
 
 enum ViewMode {
@@ -24,7 +24,8 @@ struct FileListView: View {
     @State private var newFileName = ""
     @State private var editingItem: FileItem?
     @State private var newItemName = ""
-    @State private var selectedFileID: UUID?
+    @State private var selectedFileIDs: Set<UUID> = []
+    @State private var lastSelectedID: UUID?
     @FocusState private var isListFocused: Bool
     @State private var sortOrder = [KeyPathComparator(\FileItem.name)]
     @State private var itemToDelete: FileItem?
@@ -151,7 +152,7 @@ struct FileListView: View {
             if editingItem != nil || showingCreateFolder || showingCreateFile { return .ignored }
 
             if keyPress.characters == " " {
-                if let currentId = selectedFileID, let item = sortedFiles.first(where: { $0.id == currentId }) {
+                if let currentId = selectedFileIDs.first, let item = sortedFiles.first(where: { $0.id == currentId }) {
                     previewURL = item.url
                     return .handled
                 }
@@ -165,20 +166,22 @@ struct FileListView: View {
             guard !currentSortedFiles.isEmpty else { return .ignored }
 
             var startIndex = 0
-            if let currentId = selectedFileID, let currentIndex = currentSortedFiles.firstIndex(where: { $0.id == currentId }) {
+            if let currentId = selectedFileIDs.first, let currentIndex = currentSortedFiles.firstIndex(where: { $0.id == currentId }) {
                 startIndex = currentIndex + 1
             }
 
             for i in startIndex ..< currentSortedFiles.count {
                 if currentSortedFiles[i].name.lowercased().hasPrefix(prefix) {
-                    selectedFileID = currentSortedFiles[i].id
+                    selectedFileIDs = [currentSortedFiles[i].id]
+                    lastSelectedID = currentSortedFiles[i].id
                     return .handled
                 }
             }
 
             for i in 0 ..< startIndex {
                 if currentSortedFiles[i].name.lowercased().hasPrefix(prefix) {
-                    selectedFileID = currentSortedFiles[i].id
+                    selectedFileIDs = [currentSortedFiles[i].id]
+                    lastSelectedID = currentSortedFiles[i].id
                     return .handled
                 }
             }
@@ -188,7 +191,7 @@ struct FileListView: View {
     }
 
     var listView: some View {
-        Table(sortedFiles, selection: $selectedFileID, sortOrder: $sortOrder) {
+        Table(sortedFiles, selection: $selectedFileIDs, sortOrder: $sortOrder) {
             TableColumn("Nome", value: \.name) { item in
                 HStack(spacing: 8) {
                     FileIconView(item: item, size: CGSize(width: 16, height: 16))
@@ -305,7 +308,7 @@ struct FileListView: View {
                             .frame(maxWidth: 100)
                     }
                     .padding(12)
-                    .background(selectedFileID == item.id ? Color.accentColor.opacity(0.2) : Color.clear)
+                    .background(selectedFileIDs.contains(item.id) ? Color.accentColor.opacity(0.2) : Color.clear)
                     .cornerRadius(8)
                     .onTapGesture(count: 2) {
                         if item.isDirectory {
@@ -316,7 +319,24 @@ struct FileListView: View {
                     }
                     .simultaneousGesture(
                         TapGesture().onEnded {
-                            selectedFileID = item.id
+                            if NSApp.currentEvent?.modifierFlags.contains(.command) == true {
+                                if selectedFileIDs.contains(item.id) {
+                                    selectedFileIDs.remove(item.id)
+                                } else {
+                                    selectedFileIDs.insert(item.id)
+                                }
+                                lastSelectedID = item.id
+                            } else if NSApp.currentEvent?.modifierFlags.contains(.shift) == true,
+                                      let lastId = lastSelectedID,
+                                      let lastIndex = sortedFiles.firstIndex(where: { $0.id == lastId }),
+                                      let currentIndex = sortedFiles.firstIndex(where: { $0.id == item.id })
+                            {
+                                let range = min(lastIndex, currentIndex) ... max(lastIndex, currentIndex)
+                                selectedFileIDs.formUnion(sortedFiles[range].map { $0.id })
+                            } else {
+                                selectedFileIDs = [item.id]
+                                lastSelectedID = item.id
+                            }
                         }
                     )
                     .contextMenu {
