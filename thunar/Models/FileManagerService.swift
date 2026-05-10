@@ -187,6 +187,16 @@ class FileManagerService: ObservableObject {
         }
     }
 
+    func permanentDeleteItem(_ item: FileItem) {
+        do {
+            try fileManager.removeItem(at: item.url)
+            loadDirectory()
+            postStatus("\"\(item.name)\" excluído permanentemente")
+        } catch {
+            errorMessage = "Erro ao excluir: \(error.localizedDescription)"
+        }
+    }
+
     func compressItem(_ item: FileItem) {
         let currentDir = currentDirectory
         isProcessing = true

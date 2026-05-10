@@ -141,16 +141,16 @@ struct FileListView: View {
             }
         }
         .confirmationDialog(
-            "Mover para a Lixeira",
+            "Excluir Permanentemente",
             isPresented: Binding(
                 get: { itemToDelete != nil },
                 set: { if !$0 { itemToDelete = nil } }
             ),
             titleVisibility: .visible
         ) {
-            Button("Mover para Lixeira", role: .destructive) {
+            Button("Excluir", role: .destructive) {
                 if let item = itemToDelete {
-                    fileManager.deleteItem(item)
+                    fileManager.permanentDeleteItem(item)
                 }
                 itemToDelete = nil
             }
@@ -159,7 +159,7 @@ struct FileListView: View {
             }
         } message: {
             if let item = itemToDelete {
-                Text("Tem certeza de que deseja mover '\(item.name)' para a Lixeira?")
+                Text("'\(item.name)' será apagado definitivamente. Esta ação não pode ser desfeita.")
             }
         }
         .quickLookPreview($previewURL)
@@ -193,6 +193,18 @@ struct FileListView: View {
             if keyPress.characters == " " {
                 if let currentId = selectedFileIDs.first, let item = sortedFiles.first(where: { $0.id == currentId }) {
                     previewURL = item.url
+                    return .handled
+                }
+                return .ignored
+            }
+
+            if keyPress.key == .return, viewMode == .icons {
+                if let currentId = selectedFileIDs.first, let item = sortedFiles.first(where: { $0.id == currentId }) {
+                    if item.isDirectory {
+                        fileManager.navigateTo(item.url)
+                    } else {
+                        NSWorkspace.shared.open(item.url)
+                    }
                     return .handled
                 }
                 return .ignored
@@ -351,8 +363,11 @@ struct FileListView: View {
                     Label("Comprimir", systemImage: "archivebox")
                 }
                 Divider()
-                Button(action: { itemToDelete = item }) {
+                Button(action: { fileManager.deleteItem(item) }) {
                     Label("Mover para Lixeira", systemImage: "trash")
+                }
+                Button(role: .destructive, action: { itemToDelete = item }) {
+                    Label("Excluir Permanentemente", systemImage: "xmark.bin")
                 }
             }
         } primaryAction: { items in
@@ -495,8 +510,11 @@ struct FileListView: View {
                                 Label("Comprimir", systemImage: "archivebox")
                             }
                             Divider()
-                            Button(action: { itemToDelete = item }) {
+                            Button(action: { fileManager.deleteItem(item) }) {
                                 Label("Mover para Lixeira", systemImage: "trash")
+                            }
+                            Button(role: .destructive, action: { itemToDelete = item }) {
+                                Label("Excluir Permanentemente", systemImage: "xmark.bin")
                             }
                         }
                     }
