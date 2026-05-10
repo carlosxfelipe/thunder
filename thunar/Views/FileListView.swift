@@ -7,6 +7,7 @@
 
 import AppKit
 import QuickLookThumbnailing
+import QuickLook
 import SwiftUI
 
 enum ViewMode {
@@ -27,6 +28,7 @@ struct FileListView: View {
     @FocusState private var isListFocused: Bool
     @State private var sortOrder = [KeyPathComparator(\FileItem.name)]
     @State private var itemToDelete: FileItem?
+    @State private var previewURL: URL?
 
     var sortedFiles: [FileItem] {
         fileManager.files.sorted(using: sortOrder)
@@ -138,6 +140,7 @@ struct FileListView: View {
                 Text("Tem certeza de que deseja mover '\(item.name)' para a Lixeira?")
             }
         }
+        .quickLookPreview($previewURL)
         .focusable()
         .focusEffectDisabled()
         .focused($isListFocused)
@@ -146,6 +149,14 @@ struct FileListView: View {
         }
         .onKeyPress { keyPress in
             if editingItem != nil || showingCreateFolder || showingCreateFile { return .ignored }
+
+            if keyPress.characters == " " {
+                if let currentId = selectedFileID, let item = sortedFiles.first(where: { $0.id == currentId }) {
+                    previewURL = item.url
+                    return .handled
+                }
+                return .ignored
+            }
 
             guard keyPress.modifiers.isEmpty, let char = keyPress.characters.first, char.isLetter || char.isNumber else { return .ignored }
 
