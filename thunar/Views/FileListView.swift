@@ -6,6 +6,7 @@
 //
 
 import AppKit
+import QuickLookThumbnailing
 import SwiftUI
 
 enum ViewMode {
@@ -151,10 +152,7 @@ struct FileListView: View {
         Table(fileManager.files, selection: $selectedFileID) {
             TableColumn("Nome") { item in
                 HStack(spacing: 8) {
-                    item.icon
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 16, height: 16)
+                    FileIconView(item: item, size: CGSize(width: 16, height: 16))
                         .foregroundColor(.accentColor)
                     if editingItem == item {
                         TextField("Nome", text: $newItemName)
@@ -255,10 +253,7 @@ struct FileListView: View {
             ], spacing: 16) {
                 ForEach(fileManager.files) { item in
                     VStack(spacing: 8) {
-                        item.icon
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 56, height: 56)
+                        FileIconView(item: item, size: CGSize(width: 56, height: 56))
                             .foregroundColor(.accentColor)
                         Text(item.name)
                             .font(.system(size: 11))
@@ -400,6 +395,54 @@ struct CreateFileSheet: View {
         }
         .padding(24)
         .frame(width: 300)
+    }
+}
+
+struct FileIconView: View {
+    let item: FileItem
+    let size: CGSize
+
+    @State private var thumbnail: NSImage?
+
+    var body: some View {
+        Group {
+            if let thumbnail = thumbnail {
+                Image(nsImage: thumbnail)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+            } else {
+                item.icon
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+            }
+        }
+        .frame(width: size.width, height: size.height)
+        .onAppear {
+            loadThumbnail()
+        }
+    }
+
+    private func loadThumbnail() {
+        guard !item.isDirectory else { return }
+
+        let ext = item.url.pathExtension.lowercased()
+        let supportedExtensions = ["png", "jpg", "jpeg", "gif", "heic", "webp", "pdf", "mp4", "mov"]
+        guard supportedExtensions.contains(ext) else { return }
+
+        let request = QLThumbnailGenerator.Request(
+            fileAt: item.url,
+            size: size,
+            scale: NSScreen.main?.backingScaleFactor ?? 2.0,
+            representationTypes: .thumbnail
+        )
+
+        QLThumbnailGenerator.shared.generateBestRepresentation(for: request) { rep, _ in
+            if let nsImage = rep?.nsImage {
+                DispatchQueue.main.async {
+                    self.thumbnail = nsImage
+                }
+            }
+        }
     }
 }
 
