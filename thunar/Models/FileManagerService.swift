@@ -236,8 +236,13 @@ class FileManagerService: ObservableObject {
         for sourceURL in clipboardItem.urls {
             var destinationURL = currentDirectory.appendingPathComponent(sourceURL.lastPathComponent)
 
-            // Evita erro se tentar colar na mesma pasta com o mesmo nome
-            if fileManager.fileExists(atPath: destinationURL.path), sourceURL != destinationURL {
+            // Se for mover (recortar) para o mesmo lugar exato, não fazemos nada
+            if sourceURL == destinationURL, clipboardItem.action == .cut {
+                continue
+            }
+
+            // Se o arquivo já existe na pasta de destino (ou estamos copiando pro mesmo lugar), geramos um novo nome
+            if fileManager.fileExists(atPath: destinationURL.path) {
                 var counter = 2
                 let baseName = sourceURL.deletingPathExtension().lastPathComponent
                 let ext = sourceURL.pathExtension
@@ -247,8 +252,6 @@ class FileManagerService: ObservableObject {
                     counter += 1
                 }
             }
-
-            guard sourceURL != destinationURL else { continue }
 
             do {
                 if clipboardItem.action == .copy {

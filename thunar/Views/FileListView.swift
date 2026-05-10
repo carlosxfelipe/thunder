@@ -109,6 +109,25 @@ struct FileListView: View {
                 newFileName = ""
             }
         }
+        .sheet(item: $editingItem) { item in
+            RenameSheet(
+                item: item,
+                fileName: $newItemName,
+                isPresented: Binding(
+                    get: { editingItem != nil },
+                    set: { if !$0 { editingItem = nil } }
+                )
+            ) {
+                if !newItemName.isEmpty && newItemName != item.name {
+                    fileManager.renameItem(item, to: newItemName)
+                }
+                editingItem = nil
+                newItemName = ""
+            }
+            .onAppear {
+                newItemName = item.name
+            }
+        }
         .alert("Erro", isPresented: Binding<Bool>(
             get: { fileManager.errorMessage != nil },
             set: { if !$0 { fileManager.errorMessage = nil } }
@@ -214,21 +233,7 @@ struct FileListView: View {
                 HStack(spacing: 8) {
                     FileIconView(item: item, size: CGSize(width: 16, height: 16))
                         .foregroundColor(.accentColor)
-                    if editingItem == item {
-                        TextField("Nome", text: $newItemName)
-                            .onSubmit {
-                                if !newItemName.isEmpty {
-                                    fileManager.renameItem(item, to: newItemName)
-                                }
-                                editingItem = nil
-                                newItemName = ""
-                            }
-                            .onAppear {
-                                newItemName = item.name
-                            }
-                    } else {
-                        Text(item.name)
-                    }
+                    Text(item.name)
                 }
             }
 
@@ -540,6 +545,41 @@ struct FileIconView: View {
                 }
             }
         }
+    }
+}
+
+struct RenameSheet: View {
+    let item: FileItem
+    @Binding var fileName: String
+    @Binding var isPresented: Bool
+    let onRename: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Renomear")
+                .font(.headline)
+
+            TextField("Novo nome", text: $fileName)
+                .textFieldStyle(.roundedBorder)
+
+            HStack {
+                Button("Cancelar") {
+                    isPresented = false
+                }
+                .keyboardShortcut(.cancelAction)
+
+                Spacer()
+
+                Button("Renomear") {
+                    onRename()
+                    isPresented = false
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(fileName.isEmpty || fileName == item.name)
+            }
+        }
+        .padding(24)
+        .frame(width: 300)
     }
 }
 
