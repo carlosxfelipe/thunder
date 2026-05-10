@@ -67,7 +67,7 @@ struct FileListView: View {
                 .controlSize(.large)
                 .frame(width: 80)
 
-                Button(action: { fileManager.pasteItem() }) {
+                Button(action: { fileManager.pasteItems() }) {
                     Image(systemName: "doc.on.clipboard")
                 }
                 .disabled(fileManager.clipboard == nil)
@@ -142,6 +142,24 @@ struct FileListView: View {
             }
         }
         .quickLookPreview($previewURL)
+        .background(
+            Group {
+                Button(action: {
+                    let items = sortedFiles.filter { selectedFileIDs.contains($0.id) }
+                    if !items.isEmpty { fileManager.copyItems(items) }
+                }) { EmptyView() }.keyboardShortcut("c", modifiers: .command)
+
+                Button(action: {
+                    let items = sortedFiles.filter { selectedFileIDs.contains($0.id) }
+                    if !items.isEmpty { fileManager.cutItems(items) }
+                }) { EmptyView() }.keyboardShortcut("x", modifiers: .command)
+
+                Button(action: {
+                    fileManager.pasteItems()
+                }) { EmptyView() }.keyboardShortcut("v", modifiers: .command)
+            }
+            .opacity(0)
+        )
         .focusable()
         .focusEffectDisabled()
         .focused($isListFocused)
@@ -248,10 +266,16 @@ struct FileListView: View {
                         Label("Abrir no Terminal", systemImage: "terminal")
                     }
                 }
-                Button(action: { fileManager.copyItem(item) }) {
+                Button(action: {
+                    let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+                    fileManager.copyItems(items)
+                }) {
                     Label("Copiar", systemImage: "doc.on.doc")
                 }
-                Button(action: { fileManager.cutItem(item) }) {
+                Button(action: {
+                    let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+                    fileManager.cutItems(items)
+                }) {
                     Label("Recortar", systemImage: "scissors")
                 }
                 Divider()
@@ -281,7 +305,7 @@ struct FileListView: View {
             }
             Divider()
 
-            Button(action: { fileManager.pasteItem() }) {
+            Button(action: { fileManager.pasteItems() }) {
                 Label("Colar", systemImage: "doc.on.clipboard")
             }
             .disabled(fileManager.clipboard == nil)
@@ -357,10 +381,16 @@ struct FileListView: View {
                                 Label("Abrir no Terminal", systemImage: "terminal")
                             }
                         }
-                        Button(action: { fileManager.copyItem(item) }) {
+                        Button(action: {
+                            let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+                            fileManager.copyItems(items)
+                        }) {
                             Label("Copiar", systemImage: "doc.on.doc")
                         }
-                        Button(action: { fileManager.cutItem(item) }) {
+                        Button(action: {
+                            let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+                            fileManager.cutItems(items)
+                        }) {
                             Label("Recortar", systemImage: "scissors")
                         }
                         Divider()
@@ -385,7 +415,7 @@ struct FileListView: View {
             }
             Divider()
 
-            Button(action: { fileManager.pasteItem() }) {
+            Button(action: { fileManager.pasteItems() }) {
                 Label("Colar", systemImage: "doc.on.clipboard")
             }
             .disabled(fileManager.clipboard == nil)

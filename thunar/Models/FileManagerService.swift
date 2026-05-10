@@ -21,7 +21,7 @@ class FileManagerService: ObservableObject {
         case cut
     }
 
-    @Published var clipboard: (url: URL, action: ClipboardAction)? = nil
+    @Published var clipboard: (urls: [URL], action: ClipboardAction)? = nil
     @Published var errorMessage: String? = nil
     @Published var showHiddenFiles: Bool = false {
         didSet {
@@ -222,35 +222,49 @@ class FileManagerService: ObservableObject {
         }
     }
 
-    func copyItem(_ item: FileItem) {
-        clipboard = (item.url, .copy)
+    func copyItems(_ items: [FileItem]) {
+        clipboard = (items.map { $0.url }, .copy)
     }
 
-    func cutItem(_ item: FileItem) {
-        clipboard = (item.url, .cut)
+    func cutItems(_ items: [FileItem]) {
+        clipboard = (items.map { $0.url }, .cut)
     }
 
-    func pasteItem() {
+    func pasteItems() {
         guard let clipboardItem = clipboard else { return }
 
-        let sourceURL = clipboardItem.url
-        let destinationURL = currentDirectory.appendingPathComponent(sourceURL.lastPathComponent)
+        for sourceURL in clipboardItem.urls {
+            var destinationURL = currentDirectory.appendingPathComponent(sourceURL.lastPathComponent)
 
-        // Evita erro se tentar colar na mesma pasta com o mesmo nome
-        guard sourceURL != destinationURL else { return }
-
-        do {
-            if clipboardItem.action == .copy {
-                try fileManager.copyItem(at: sourceURL, to: destinationURL)
-            } else if clipboardItem.action == .cut {
-                try fileManager.moveItem(at: sourceURL, to: destinationURL)
-                clipboard = nil // Limpa após mover
+            // Evita erro se tentar colar na mesma pasta com o mesmo nome
+            if fileManager.fileExists(atPath: destinationURL.path), sourceURL != destinationURL {
+                var counter = 2
+                let baseName = sourceURL.deletingPathExtension().lastPathComponent
+                let ext = sourceURL.pathExtension
+                while fileManager.fileExists(atPath: destinationURL.path) {
+                    let newName = ext.isEmpty ? "\(baseName) \(counter)" : "\(baseName) \(counter).\(ext)"
+                    destinationURL = currentDirectory.appendingPathComponent(newName)
+                    counter += 1
+                }
             }
-            loadDirectory()
-        } catch {
-            print("Error pasting item: \(error)")
-            errorMessage = "Erro ao colar item: \(error.localizedDescription)"
+
+            guard sourceURL != destinationURL else { continue }
+
+            do {
+                if clipboardItem.action == .copy {
+                    try fileManager.copyItem(at: sourceURL, to: destinationURL)
+                } else if clipboardItem.action == .cut {
+                    try fileManager.moveItem(at: sourceURL, to: destinationURL)
+                }
+            } catch {
+                errorMessage = "Erro ao colar: \(error.localizedDescription)"
+            }
         }
+
+        if clipboardItem.action == .cut {
+            clipboard = nil // Limpa após mover
+        }
+        loadDirectory()
     }
 
     func openInTerminal(url: URL? = nil) {
