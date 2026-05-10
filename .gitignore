@@ -27,3 +27,7 @@ project.xcworkspace/
 
 # CocoaPods
 Pods/
+
+# Distribution artifacts
+*.dmg
+dmg-staging/

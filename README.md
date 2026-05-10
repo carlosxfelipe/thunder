@@ -27,6 +27,36 @@ open thunar.xcodeproj
 
 No Xcode, selecione o target `thunar` e clique em Run (Cmd+R).
 
+## Build de distribuição (.dmg)
+
+Para gerar um instalador no estilo "arraste para a pasta Aplicativos":
+
+```
+./scripts/build-dmg.sh
+```
+
+O arquivo `Thunar.dmg` será criado na raiz do projeto.
+
+> **Aviso de Gatekeeper**: como o app não é assinado com Apple Developer ID, ao abrir pela primeira vez o macOS pode exibir *"Thunar não pôde ser aberto porque o desenvolvedor não pode ser verificado"* ou *"Thunar está danificado"*. Para contornar, escolha uma das opções abaixo.
+
+### Opção A — Botão direito (recomendado)
+
+1. Arraste o `Thunar.app` para `/Aplicativos`.
+2. Clique com o **botão direito** sobre o app → **Abrir**.
+3. No diálogo, clique em **Abrir** novamente.
+
+A partir daí o macOS lembra a permissão.
+
+### Opção B — Remover o atributo de quarentena pelo Terminal
+
+Se aparecer "está danificado", rode:
+
+```
+xattr -cr /Applications/Thunar.app
+```
+
+Depois é só abrir normalmente.
+
 ## Atalhos de teclado
 
 | Atalho | Ação |
