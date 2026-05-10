@@ -86,11 +86,12 @@
 				};
 			};
 			buildConfigurationList = 07E3F9872FAFC440000811F7 /* Build configuration list for PBXProject "thunar" */;
-			developmentRegion = en;
+			developmentRegion = "pt-BR";
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
+				"pt-BR",
 			);
 			mainGroup = 07E3F9832FAFC440000811F7;
 			minimizedProjectReferenceProxies = 1;
