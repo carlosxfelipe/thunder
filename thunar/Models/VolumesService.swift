@@ -31,6 +31,16 @@ struct MountedVolume: Identifiable, Hashable {
         return "internaldrive.fill"
     }
 
+    /// Indica se o volume pode ser ejetado pelo usuário.
+    /// HDs externos às vezes reportam `isEjectable=false`, mas qualquer volume não-interno
+    /// montado em `/Volumes/` deve ser ejetável (igual ao Finder faz).
+    var canEject: Bool {
+        if isEjectable || isRemovable { return true }
+        if !isInternal { return true }
+        if !isLocal { return true }
+        return false
+    }
+
     var formattedCapacity: String? {
         guard let total = totalCapacity else { return nil }
         let formatter = ByteCountFormatter()

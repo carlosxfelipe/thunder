@@ -38,7 +38,7 @@ struct SidebarView: View {
                             Button("Abrir") {
                                 fileManager.navigateTo(volume.url)
                             }
-                            if volume.isEjectable || volume.isRemovable {
+                            if volume.canEject {
                                 Divider()
                                 Button("Ejetar") {
                                     _ = volumesService.eject(volume)
@@ -112,7 +112,7 @@ struct VolumeRow: View {
             HStack(spacing: 4) {
                 Text(volume.name)
                 Spacer(minLength: 0)
-                if volume.isEjectable || volume.isRemovable {
+                if volume.canEject {
                     Image(systemName: "eject.fill")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundColor(.secondary)

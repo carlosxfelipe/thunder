@@ -70,21 +70,14 @@ class FileManagerService: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] notification in
+            // Extrai a URL antes de entrar no Task — Notification não é Sendable, URL é.
+            let unmountedURL = (notification.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL)
+                ?? (notification.userInfo?["NSDevicePath"] as? String).map { URL(fileURLWithPath: $0) }
+            guard let unmountedURL else { return }
             Task { @MainActor [weak self] in
-                self?.handleVolumeUnmount(notification: notification)
+                self?.navigateAwayIfInside(unmountedURL)
             }
         }
-    }
-
-    private func handleVolumeUnmount(notification: Notification) {
-        guard let unmountedPath = notification.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL else {
-            // Em alguns casos chega como NSWorkspaceVolumeLocalizedNameKey ou path simples; tentamos fallback.
-            if let path = notification.userInfo?["NSDevicePath"] as? String {
-                navigateAwayIfInside(URL(fileURLWithPath: path))
-            }
-            return
-        }
-        navigateAwayIfInside(unmountedPath)
     }
 
     private func navigateAwayIfInside(_ unmountedURL: URL) {
