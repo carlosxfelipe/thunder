@@ -23,6 +23,8 @@ class FileManagerService: ObservableObject {
 
     @Published var clipboard: (urls: [URL], action: ClipboardAction)? = nil
     @Published var errorMessage: String? = nil
+    @Published var statusMessage: String? = nil
+    @Published var isProcessing: Bool = false
     @Published var showHiddenFiles: Bool = false {
         didSet {
             loadDirectory()
@@ -37,6 +39,18 @@ class FileManagerService: ObservableObject {
         navigationHistory.append(home)
         historyIndex = 0
         loadDirectory()
+    }
+
+    func postStatus(_ message: String, autoClear: Bool = true) {
+        statusMessage = message
+        if autoClear {
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                if self.statusMessage == message {
+                    self.statusMessage = nil
+                }
+            }
+        }
     }
 
     func loadDirectory(_ url: URL? = nil) {
@@ -167,6 +181,7 @@ class FileManagerService: ObservableObject {
         do {
             try fileManager.trashItem(at: item.url, resultingItemURL: nil)
             loadDirectory()
+            postStatus("\"\(item.name)\" movido para a Lixeira")
         } catch {
             errorMessage = "Erro ao excluir: \(error.localizedDescription)"
         }
@@ -174,6 +189,8 @@ class FileManagerService: ObservableObject {
 
     func compressItem(_ item: FileItem) {
         let currentDir = currentDirectory
+        isProcessing = true
+        postStatus("Comprimindo \"\(item.name)\"...", autoClear: false)
 
         Task.detached {
             var zipName = item.name + ".zip"
@@ -195,11 +212,15 @@ class FileManagerService: ObservableObject {
                 process.waitUntilExit()
 
                 await MainActor.run {
+                    self.isProcessing = false
                     self.loadDirectory()
+                    self.postStatus("\"\(item.name)\" comprimido com sucesso")
                 }
             } catch {
                 await MainActor.run {
+                    self.isProcessing = false
                     self.errorMessage = "Erro ao comprimir: \(error.localizedDescription)"
+                    self.statusMessage = nil
                 }
             }
         }
@@ -217,6 +238,7 @@ class FileManagerService: ObservableObject {
         do {
             try fileManager.moveItem(at: item.url, to: newURL)
             loadDirectory()
+            postStatus("\"\(item.name)\" renomeado para \"\(newName)\"")
         } catch {
             print("Error renaming item: \(error)")
         }
@@ -224,24 +246,30 @@ class FileManagerService: ObservableObject {
 
     func copyItems(_ items: [FileItem]) {
         clipboard = (items.map { $0.url }, .copy)
+        let count = items.count
+        postStatus(count == 1 ? "\"\(items[0].name)\" copiado" : "\(count) itens copiados")
     }
 
     func cutItems(_ items: [FileItem]) {
         clipboard = (items.map { $0.url }, .cut)
+        let count = items.count
+        postStatus(count == 1 ? "\"\(items[0].name)\" recortado" : "\(count) itens recortados")
     }
 
     func pasteItems() {
         guard let clipboardItem = clipboard else { return }
+        let count = clipboardItem.urls.count
+        let actionLabel = clipboardItem.action == .copy ? "Colando" : "Movendo"
+        postStatus(count == 1 ? "\(actionLabel) \"\(clipboardItem.urls[0].lastPathComponent)\"..." : "\(actionLabel) \(count) itens...", autoClear: false)
+        isProcessing = true
 
         for sourceURL in clipboardItem.urls {
             var destinationURL = currentDirectory.appendingPathComponent(sourceURL.lastPathComponent)
 
-            // Se for mover (recortar) para o mesmo lugar exato, não fazemos nada
             if sourceURL == destinationURL, clipboardItem.action == .cut {
                 continue
             }
 
-            // Se o arquivo já existe na pasta de destino (ou estamos copiando pro mesmo lugar), geramos um novo nome
             if fileManager.fileExists(atPath: destinationURL.path) {
                 var counter = 2
                 let baseName = sourceURL.deletingPathExtension().lastPathComponent
@@ -265,9 +293,12 @@ class FileManagerService: ObservableObject {
         }
 
         if clipboardItem.action == .cut {
-            clipboard = nil // Limpa após mover
+            clipboard = nil
         }
+        isProcessing = false
         loadDirectory()
+        let doneLabel = clipboardItem.action == .copy ? "colado" : "movido"
+        postStatus(count == 1 ? "\"\(clipboardItem.urls[0].lastPathComponent)\" \(doneLabel) com sucesso" : "\(count) itens \(doneLabel)s com sucesso")
     }
 
     func openInTerminal(url: URL? = nil) {
