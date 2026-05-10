@@ -29,21 +29,22 @@ struct SidebarView: View {
             if !volumesService.volumes.isEmpty {
                 Section("Dispositivos") {
                     ForEach(volumesService.volumes) { volume in
-                        Label(volume.name, systemImage: volume.icon)
-                            .font(.system(size: 13))
-                            .tag(SidebarSelection.volume(volume.url))
-                            .help(volume.formattedCapacity ?? volume.url.path)
-                            .contextMenu {
-                                Button("Abrir") {
-                                    fileManager.navigateTo(volume.url)
-                                }
-                                if volume.isEjectable || volume.isRemovable {
-                                    Divider()
-                                    Button("Ejetar") {
-                                        _ = volumesService.eject(volume)
-                                    }
+                        VolumeRow(volume: volume) {
+                            _ = volumesService.eject(volume)
+                        }
+                        .tag(SidebarSelection.volume(volume.url))
+                        .help(volume.formattedCapacity ?? volume.url.path)
+                        .contextMenu {
+                            Button("Abrir") {
+                                fileManager.navigateTo(volume.url)
+                            }
+                            if volume.isEjectable || volume.isRemovable {
+                                Divider()
+                                Button("Ejetar") {
+                                    _ = volumesService.eject(volume)
                                 }
                             }
+                        }
                     }
                 }
             }
@@ -99,6 +100,33 @@ struct SidebarRow: View {
     var body: some View {
         Label(item.rawValue, systemImage: item.icon)
             .font(.system(size: 13))
+    }
+}
+
+struct VolumeRow: View {
+    let volume: MountedVolume
+    let onEject: () -> Void
+
+    var body: some View {
+        Label {
+            HStack(spacing: 4) {
+                Text(volume.name)
+                Spacer(minLength: 0)
+                if volume.isEjectable || volume.isRemovable {
+                    Image(systemName: "eject.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            onEject()
+                        }
+                        .help("Ejetar \(volume.name)")
+                }
+            }
+        } icon: {
+            Image(systemName: volume.icon)
+        }
+        .font(.system(size: 13))
     }
 }
 

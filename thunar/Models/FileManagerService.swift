@@ -46,6 +46,7 @@ class FileManagerService: ObservableObject {
     private var queryObservers: [AnyCancellable] = []
 
     private let fileManager = FileManager.default
+    private var volumeUnmountObserver: NSObjectProtocol?
 
     init() {
         let home = fileManager.homeDirectoryForCurrentUser
@@ -53,6 +54,46 @@ class FileManagerService: ObservableObject {
         navigationHistory.append(home)
         historyIndex = 0
         loadDirectory()
+        registerVolumeObservers()
+    }
+
+    deinit {
+        if let observer = volumeUnmountObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(observer)
+        }
+    }
+
+    private func registerVolumeObservers() {
+        let center = NSWorkspace.shared.notificationCenter
+        volumeUnmountObserver = center.addObserver(
+            forName: NSWorkspace.didUnmountNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            Task { @MainActor [weak self] in
+                self?.handleVolumeUnmount(notification: notification)
+            }
+        }
+    }
+
+    private func handleVolumeUnmount(notification: Notification) {
+        guard let unmountedPath = notification.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL else {
+            // Em alguns casos chega como NSWorkspaceVolumeLocalizedNameKey ou path simples; tentamos fallback.
+            if let path = notification.userInfo?["NSDevicePath"] as? String {
+                navigateAwayIfInside(URL(fileURLWithPath: path))
+            }
+            return
+        }
+        navigateAwayIfInside(unmountedPath)
+    }
+
+    private func navigateAwayIfInside(_ unmountedURL: URL) {
+        let unmountedPath = unmountedURL.standardizedFileURL.path
+        let currentPath = currentDirectory.standardizedFileURL.path
+        if currentPath == unmountedPath || currentPath.hasPrefix(unmountedPath + "/") {
+            postStatus("Volume \"\(unmountedURL.lastPathComponent)\" foi desmontado")
+            navigateTo(fileManager.homeDirectoryForCurrentUser)
+        }
     }
 
     func postStatus(_ message: String, autoClear: Bool = true) {
