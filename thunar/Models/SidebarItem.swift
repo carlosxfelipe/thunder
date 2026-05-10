@@ -14,6 +14,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
     case documents = "Documentos"
     case downloads = "Downloads"
     case applications = "Aplicativos"
+    case trash = "Lixeira"
 
     var id: String { rawValue }
 
@@ -24,6 +25,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .documents: return "doc.fill"
         case .downloads: return "arrow.down.circle.fill"
         case .applications: return "app.fill"
+        case .trash: return "trash.fill"
         }
     }
 
@@ -41,6 +43,8 @@ enum SidebarItem: String, CaseIterable, Identifiable {
             return fileManager.urls(for: .downloadsDirectory, in: .userDomainMask).first ?? fileManager.homeDirectoryForCurrentUser
         case .applications:
             return URL(fileURLWithPath: "/Applications")
+        case .trash:
+            return fileManager.urls(for: .trashDirectory, in: .userDomainMask).first ?? fileManager.homeDirectoryForCurrentUser
         }
     }
 }

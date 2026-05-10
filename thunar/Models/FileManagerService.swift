@@ -66,7 +66,11 @@ class FileManagerService: ObservableObject {
                 self.selectedFiles = []
                 self.errorMessage = nil
             } catch {
-                self.errorMessage = "Não foi possível acessar a pasta. Permissão negada ou o diretório não existe.\nDetalhes: \(error.localizedDescription)"
+                if targetURL.lastPathComponent == ".Trash" || error.localizedDescription.contains("permission") {
+                    self.errorMessage = "Acesso Negado (Proteção do macOS).\n\nPara acessar a Lixeira ou pastas protegidas do sistema, vá em:\nAjustes do Sistema > Privacidade e Segurança > Acesso Total ao Disco\ne conceda permissão para o seu aplicativo (ou para o Xcode/Terminal)."
+                } else {
+                    self.errorMessage = "Não foi possível acessar a pasta.\nDetalhes: \(error.localizedDescription)"
+                }
             }
         }
     }
@@ -161,10 +165,43 @@ class FileManagerService: ObservableObject {
 
     func deleteItem(_ item: FileItem) {
         do {
-            try fileManager.removeItem(at: item.url)
+            try fileManager.trashItem(at: item.url, resultingItemURL: nil)
             loadDirectory()
         } catch {
-            print("Error deleting item: \(error)")
+            errorMessage = "Erro ao excluir: \(error.localizedDescription)"
+        }
+    }
+
+    func compressItem(_ item: FileItem) {
+        let currentDir = currentDirectory
+
+        Task.detached {
+            var zipName = item.name + ".zip"
+            var zipURL = currentDir.appendingPathComponent(zipName)
+            var counter = 2
+
+            while FileManager.default.fileExists(atPath: zipURL.path) {
+                zipName = "\(item.name) \(counter).zip"
+                zipURL = currentDir.appendingPathComponent(zipName)
+                counter += 1
+            }
+
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
+            process.arguments = ["-c", "-k", "--sequesterRsrc", "--keepParent", item.url.path, zipURL.path]
+
+            do {
+                try process.run()
+                process.waitUntilExit()
+
+                await MainActor.run {
+                    self.loadDirectory()
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = "Erro ao comprimir: \(error.localizedDescription)"
+                }
+            }
         }
     }
 

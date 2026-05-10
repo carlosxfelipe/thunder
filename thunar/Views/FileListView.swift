@@ -213,6 +213,10 @@ struct FileListView: View {
                     Label("Recortar", systemImage: "scissors")
                 }
                 Divider()
+                Button(action: { fileManager.compressItem(item) }) {
+                    Label("Comprimir", systemImage: "archivebox")
+                }
+                Divider()
                 Button(action: { fileManager.deleteItem(item) }) {
                     Label("Mover para Lixeira", systemImage: "trash")
                 }
@@ -299,6 +303,10 @@ struct FileListView: View {
                         }
                         Button(action: { fileManager.cutItem(item) }) {
                             Label("Recortar", systemImage: "scissors")
+                        }
+                        Divider()
+                        Button(action: { fileManager.compressItem(item) }) {
+                            Label("Comprimir", systemImage: "archivebox")
                         }
                         Divider()
                         Button(action: { fileManager.deleteItem(item) }) {
