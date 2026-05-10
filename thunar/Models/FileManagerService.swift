@@ -31,6 +31,20 @@ class FileManagerService: ObservableObject {
         }
     }
 
+    @Published var searchTag: FinderTag? = nil {
+        didSet {
+            if let tag = searchTag {
+                startTagSearch(tag)
+            } else {
+                stopTagSearch()
+                loadDirectory()
+            }
+        }
+    }
+
+    private var metadataQuery = NSMetadataQuery()
+    private var queryObservers: [AnyCancellable] = []
+
     private let fileManager = FileManager.default
 
     init() {
@@ -65,7 +79,7 @@ class FileManagerService: ObservableObject {
 
                 let contents = try fileManager.contentsOfDirectory(
                     at: targetURL,
-                    includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey, .creationDateKey, .contentModificationDateKey],
+                    includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey, .creationDateKey, .contentModificationDateKey, .tagNamesKey],
                     options: options
                 )
 
@@ -329,5 +343,89 @@ class FileManagerService: ObservableObject {
 
     var canGoToParent: Bool {
         currentDirectory.path != "/"
+    }
+
+    private func startTagSearch(_ tag: FinderTag) {
+        stopTagSearch()
+
+        isProcessing = true
+        statusMessage = "Buscando itens com etiqueta \"\(tag.rawValue)\"..."
+
+        metadataQuery = NSMetadataQuery()
+        metadataQuery.searchScopes = [NSMetadataQueryLocalComputerScope]
+        metadataQuery.predicate = NSPredicate(format: "kMDItemUserTags == %@", tag.rawValue)
+
+        NotificationCenter.default.addObserver(
+            forName: .NSMetadataQueryDidFinishGathering,
+            object: metadataQuery,
+            queue: .main
+        ) { [weak self] _ in
+            self?.updateSearchResults()
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: .NSMetadataQueryDidUpdate,
+            object: metadataQuery,
+            queue: .main
+        ) { [weak self] _ in
+            self?.updateSearchResults()
+        }
+
+        metadataQuery.start()
+    }
+
+    private func stopTagSearch() {
+        metadataQuery.stop()
+        NotificationCenter.default.removeObserver(self, name: .NSMetadataQueryDidFinishGathering, object: metadataQuery)
+        NotificationCenter.default.removeObserver(self, name: .NSMetadataQueryDidUpdate, object: metadataQuery)
+    }
+
+    private func updateSearchResults() {
+        let results = metadataQuery.results as? [NSMetadataItem] ?? []
+        let items = results.compactMap { item -> FileItem? in
+            guard let path = item.value(forAttribute: NSMetadataItemPathKey) as? String else { return nil }
+            return FileItem(url: URL(fileURLWithPath: path))
+        }
+
+        files = items.sorted { $0.name.lowercased() < $1.name.lowercased() }
+        isProcessing = false
+        if files.isEmpty {
+            postStatus("Nenhum item encontrado com esta etiqueta")
+        } else {
+            statusMessage = nil
+        }
+    }
+
+    func setTag(_ tag: FinderTag, on items: [FileItem]) {
+        for item in items {
+            var currentTags = FinderTag.tagsForURL(item.url)
+            if !currentTags.contains(tag) {
+                currentTags.append(tag)
+            }
+            try? FinderTag.setTags(currentTags, on: item.url)
+        }
+        loadDirectory()
+        let count = items.count
+        postStatus(count == 1 ? "Etiqueta \"\(tag.rawValue)\" adicionada a \"\(items[0].name)\"" : "Etiqueta \"\(tag.rawValue)\" adicionada a \(count) itens")
+    }
+
+    func removeTag(_ tag: FinderTag, from items: [FileItem]) {
+        for item in items {
+            var currentTags = FinderTag.tagsForURL(item.url)
+            currentTags.removeAll { $0 == tag }
+            try? FinderTag.setTags(currentTags, on: item.url)
+        }
+        loadDirectory()
+        let count = items.count
+        postStatus(count == 1 ? "Etiqueta \"\(tag.rawValue)\" removida de \"\(items[0].name)\"" : "Etiqueta \"\(tag.rawValue)\" removida de \(count) itens")
+    }
+
+    func removeAllTags(from items: [FileItem]) {
+        for item in items {
+            try? FinderTag.setTags([], on: item.url)
+        }
+        loadDirectory()
+        let count = items.count
+        postStatus(count == 1 ? "Etiquetas removidas de \"\(items[0].name)\"" : "Etiquetas removidas de \(count) itens")
     }
 }

@@ -314,6 +314,15 @@ struct FileListView: View {
                     FileIconView(item: item, size: CGSize(width: 16, height: 16))
                         .foregroundColor(.accentColor)
                     Text(item.name)
+                    if !item.tags.isEmpty {
+                        HStack(spacing: 2) {
+                            ForEach(item.tags) { tag in
+                                Circle()
+                                    .fill(tag.color)
+                                    .frame(width: 10, height: 10)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -368,6 +377,41 @@ struct FileListView: View {
                     Label("Comprimir", systemImage: "archivebox")
                 }
                 Divider()
+                Menu {
+                    ForEach(FinderTag.allCases) { tag in
+                        Button(action: {
+                            let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+                            if item.tags.contains(tag) {
+                                fileManager.removeTag(tag, from: items)
+                            } else {
+                                fileManager.setTag(tag, on: items)
+                            }
+                        }) {
+                            HStack {
+                                Circle()
+                                    .fill(tag.color)
+                                    .frame(width: 10, height: 10)
+                                Text(tag.rawValue)
+                                if item.tags.contains(tag) {
+                                    Spacer()
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                    if !item.tags.isEmpty {
+                        Divider()
+                        Button(action: {
+                            let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+                            fileManager.removeAllTags(from: items)
+                        }) {
+                            Label("Remover Todas", systemImage: "xmark")
+                        }
+                    }
+                } label: {
+                    Label("Etiquetas", systemImage: "tag")
+                }
+                Divider()
                 Button(action: { fileManager.deleteItem(item) }) {
                     Label("Mover para Lixeira", systemImage: "trash")
                 }
@@ -412,8 +456,20 @@ struct FileListView: View {
                 ], spacing: 16) {
                     ForEach(sortedFiles) { item in
                         VStack(spacing: 8) {
-                            FileIconView(item: item, size: CGSize(width: 56, height: 56))
-                                .foregroundColor(.accentColor)
+                            ZStack(alignment: .topTrailing) {
+                                FileIconView(item: item, size: CGSize(width: 56, height: 56))
+                                    .foregroundColor(.accentColor)
+                                if !item.tags.isEmpty {
+                                    HStack(spacing: 1) {
+                                        ForEach(item.tags) { tag in
+                                            Circle()
+                                                .fill(tag.color)
+                                                .frame(width: 8, height: 8)
+                                        }
+                                    }
+                                    .offset(x: 4, y: -2)
+                                }
+                            }
                             Text(item.name)
                                 .font(.system(size: 11))
                                 .lineLimit(2)
@@ -513,6 +569,41 @@ struct FileListView: View {
                             Divider()
                             Button(action: { fileManager.compressItem(item) }) {
                                 Label("Comprimir", systemImage: "archivebox")
+                            }
+                            Divider()
+                            Menu {
+                                ForEach(FinderTag.allCases) { tag in
+                                    Button(action: {
+                                        let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+                                        if item.tags.contains(tag) {
+                                            fileManager.removeTag(tag, from: items)
+                                        } else {
+                                            fileManager.setTag(tag, on: items)
+                                        }
+                                    }) {
+                                        HStack {
+                                            Circle()
+                                                .fill(tag.color)
+                                                .frame(width: 10, height: 10)
+                                            Text(tag.rawValue)
+                                            if item.tags.contains(tag) {
+                                                Spacer()
+                                                Image(systemName: "checkmark")
+                                            }
+                                        }
+                                    }
+                                }
+                                if !item.tags.isEmpty {
+                                    Divider()
+                                    Button(action: {
+                                        let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+                                        fileManager.removeAllTags(from: items)
+                                    }) {
+                                        Label("Remover Todas", systemImage: "xmark")
+                                    }
+                                }
+                            } label: {
+                                Label("Etiquetas", systemImage: "tag")
                             }
                             Divider()
                             Button(action: { fileManager.deleteItem(item) }) {

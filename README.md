@@ -2,6 +2,16 @@
 
 Gerenciador de arquivos para macOS escrito em Swift com SwiftUI.
 
+## Funcionalidades
+
+- Navegação com abas
+- Modo lista e modo ícones
+- Copiar, recortar, colar e comprimir
+- Quick Look (barra de espaço)
+- Etiquetas coloridas (compatível com Finder)
+- Mostrar/ocultar arquivos ocultos
+- Abrir no Terminal
+
 ## Requisitos
 
 - macOS 14.0 (Sonoma) ou superior

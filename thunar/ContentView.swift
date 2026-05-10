@@ -57,7 +57,10 @@ struct ContentView: View {
     }
 
     private var windowTitle: String {
-        currentFileManager.currentDirectory.lastPathComponent
+        if let tag = currentFileManager.searchTag {
+            return "Etiqueta: \(tag.rawValue)"
+        }
+        return currentFileManager.currentDirectory.lastPathComponent
     }
 
     private func closeCurrentTab() {

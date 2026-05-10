@@ -17,6 +17,7 @@ struct FileItem: Identifiable, Hashable {
     let fileSize: Int64
     let creationDate: Date
     let modificationDate: Date
+    let tags: [FinderTag]
 
     nonisolated init(url: URL) {
         id = UUID()
@@ -24,10 +25,13 @@ struct FileItem: Identifiable, Hashable {
         name = url.lastPathComponent
         isDirectory = (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false
 
-        let resourceValues = try? url.resourceValues(forKeys: [.fileSizeKey, .creationDateKey, .contentModificationDateKey])
+        let resourceValues = try? url.resourceValues(forKeys: [.fileSizeKey, .creationDateKey, .contentModificationDateKey, .tagNamesKey])
         fileSize = Int64(resourceValues?.fileSize ?? 0)
         creationDate = resourceValues?.creationDate ?? Date()
         modificationDate = resourceValues?.contentModificationDate ?? Date()
+        tags = (resourceValues?.tagNames ?? []).compactMap { name in
+            FinderTag.allCases.first { $0.rawValue == name }
+        }
     }
 
     var icon: Image {

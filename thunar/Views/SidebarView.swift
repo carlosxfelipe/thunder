@@ -19,9 +19,38 @@ struct SidebarView: View {
                         .tag(item)
                 }
             }
+
+            Section("Etiquetas") {
+                ForEach(FinderTag.allCases) { tag in
+                    Button(action: {
+                        selectedItem = nil
+                        if fileManager.searchTag == tag {
+                            fileManager.searchTag = nil
+                        } else {
+                            fileManager.searchTag = tag
+                        }
+                    }) {
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(tag.color)
+                                .frame(width: 12, height: 12)
+                            Text(tag.rawValue)
+                                .font(.system(size: 13))
+                            Spacer()
+                            if fileManager.searchTag == tag {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.accentColor)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
         }
         .onChange(of: selectedItem) {
             if let item = selectedItem {
+                fileManager.searchTag = nil
                 fileManager.navigateTo(item.url)
             }
         }
