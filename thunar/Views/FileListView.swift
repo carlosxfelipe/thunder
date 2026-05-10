@@ -25,6 +25,12 @@ struct FileListView: View {
     @State private var newItemName = ""
     @State private var selectedFileID: UUID?
     @FocusState private var isListFocused: Bool
+    @State private var sortOrder = [KeyPathComparator(\FileItem.name)]
+    @State private var itemToDelete: FileItem?
+
+    var sortedFiles: [FileItem] {
+        fileManager.files.sorted(using: sortOrder)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -110,6 +116,28 @@ struct FileListView: View {
                 Text(errorMessage)
             }
         }
+        .confirmationDialog(
+            "Mover para a Lixeira",
+            isPresented: Binding(
+                get: { itemToDelete != nil },
+                set: { if !$0 { itemToDelete = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Mover para Lixeira", role: .destructive) {
+                if let item = itemToDelete {
+                    fileManager.deleteItem(item)
+                }
+                itemToDelete = nil
+            }
+            Button("Cancelar", role: .cancel) {
+                itemToDelete = nil
+            }
+        } message: {
+            if let item = itemToDelete {
+                Text("Tem certeza de que deseja mover '\(item.name)' para a Lixeira?")
+            }
+        }
         .focusable()
         .focusEffectDisabled()
         .focused($isListFocused)
@@ -122,24 +150,24 @@ struct FileListView: View {
             guard keyPress.modifiers.isEmpty, let char = keyPress.characters.first, char.isLetter || char.isNumber else { return .ignored }
 
             let prefix = String(char).lowercased()
-            let sortedFiles = fileManager.files
-            guard !sortedFiles.isEmpty else { return .ignored }
+            let currentSortedFiles = sortedFiles
+            guard !currentSortedFiles.isEmpty else { return .ignored }
 
             var startIndex = 0
-            if let currentId = selectedFileID, let currentIndex = sortedFiles.firstIndex(where: { $0.id == currentId }) {
+            if let currentId = selectedFileID, let currentIndex = currentSortedFiles.firstIndex(where: { $0.id == currentId }) {
                 startIndex = currentIndex + 1
             }
 
-            for i in startIndex ..< sortedFiles.count {
-                if sortedFiles[i].name.lowercased().hasPrefix(prefix) {
-                    selectedFileID = sortedFiles[i].id
+            for i in startIndex ..< currentSortedFiles.count {
+                if currentSortedFiles[i].name.lowercased().hasPrefix(prefix) {
+                    selectedFileID = currentSortedFiles[i].id
                     return .handled
                 }
             }
 
             for i in 0 ..< startIndex {
-                if sortedFiles[i].name.lowercased().hasPrefix(prefix) {
-                    selectedFileID = sortedFiles[i].id
+                if currentSortedFiles[i].name.lowercased().hasPrefix(prefix) {
+                    selectedFileID = currentSortedFiles[i].id
                     return .handled
                 }
             }
@@ -149,8 +177,8 @@ struct FileListView: View {
     }
 
     var listView: some View {
-        Table(fileManager.files, selection: $selectedFileID) {
-            TableColumn("Nome") { item in
+        Table(sortedFiles, selection: $selectedFileID, sortOrder: $sortOrder) {
+            TableColumn("Nome", value: \.name) { item in
                 HStack(spacing: 8) {
                     FileIconView(item: item, size: CGSize(width: 16, height: 16))
                         .foregroundColor(.accentColor)
@@ -172,14 +200,14 @@ struct FileListView: View {
                 }
             }
 
-            TableColumn("Data") { item in
+            TableColumn("Data", value: \.modificationDate) { item in
                 Text(item.formattedDate)
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
             }
             .width(min: 120, max: 150)
 
-            TableColumn("Tamanho") { item in
+            TableColumn("Tamanho", value: \.fileSize) { item in
                 Text(item.formattedSize)
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
@@ -217,7 +245,7 @@ struct FileListView: View {
                     Label("Comprimir", systemImage: "archivebox")
                 }
                 Divider()
-                Button(action: { fileManager.deleteItem(item) }) {
+                Button(action: { itemToDelete = item }) {
                     Label("Mover para Lixeira", systemImage: "trash")
                 }
             }
@@ -255,7 +283,7 @@ struct FileListView: View {
             LazyVGrid(columns: [
                 GridItem(.adaptive(minimum: 100), spacing: 16),
             ], spacing: 16) {
-                ForEach(fileManager.files) { item in
+                ForEach(sortedFiles) { item in
                     VStack(spacing: 8) {
                         FileIconView(item: item, size: CGSize(width: 56, height: 56))
                             .foregroundColor(.accentColor)
@@ -309,7 +337,7 @@ struct FileListView: View {
                             Label("Comprimir", systemImage: "archivebox")
                         }
                         Divider()
-                        Button(action: { fileManager.deleteItem(item) }) {
+                        Button(action: { itemToDelete = item }) {
                             Label("Mover para Lixeira", systemImage: "trash")
                         }
                     }
