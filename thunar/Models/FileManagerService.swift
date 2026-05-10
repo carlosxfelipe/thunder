@@ -21,6 +21,7 @@ class FileManagerService: ObservableObject {
     var clipboard: (urls: [URL], action: ClipboardService.ClipboardAction)? {
         clipboardService.clipboard
     }
+
     @Published var errorMessage: String? = nil
     @Published var statusMessage: String? = nil
     @Published var isProcessing: Bool = false

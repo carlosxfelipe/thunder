@@ -57,11 +57,7 @@ struct ContentView: View {
     }
 
     private var windowTitle: String {
-        let folderName = currentFileManager.currentDirectory.lastPathComponent
-        if tabManager.tabs.count > 1 {
-            return "\(folderName) — Thunar"
-        }
-        return "Thunar"
+        currentFileManager.currentDirectory.lastPathComponent
     }
 
     private func closeCurrentTab() {

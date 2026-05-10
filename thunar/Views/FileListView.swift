@@ -179,6 +179,10 @@ struct FileListView: View {
                 Button(action: {
                     fileManager.pasteItems()
                 }) { EmptyView() }.keyboardShortcut("v", modifiers: .command)
+
+                Button(action: {
+                    fileManager.showHiddenFiles.toggle()
+                }) { EmptyView() }.keyboardShortcut(".", modifiers: [.command, .shift])
             }
             .opacity(0)
         )

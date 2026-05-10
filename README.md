@@ -19,19 +19,20 @@ No Xcode, selecione o target `thunar` e clique em Run (Cmd+R).
 
 ## Atalhos de teclado
 
-| Atalho | Acao |
+| Atalho | Ação |
 |---|---|
 | Cmd+C | Copiar |
 | Cmd+X | Recortar |
 | Cmd+V | Colar |
 | Cmd+T | Nova aba |
 | Cmd+W | Fechar aba |
-| Ctrl+Tab | Proxima aba |
+| Ctrl+Tab | Próxima aba |
 | Ctrl+Shift+Tab | Aba anterior |
 | Space | Quick Look |
-| Enter | Abrir item (modo icones) |
-| Setas | Navegar entre itens (modo icones) |
-| Shift+Setas | Selecao multipla (modo icones) |
-| Shift+Clique | Selecao em bloco (modo icones) |
-| Cmd+Clique | Selecao individual |
-| Letras/Numeros | Saltar para item pelo nome |
+| Enter | Abrir item (modo ícones) |
+| Setas | Navegar entre itens (modo ícones) |
+| Shift+Setas | Seleção múltipla (modo ícones) |
+| Shift+Clique | Seleção em bloco (modo ícones) |
+| Cmd+Clique | Seleção individual |
+| Cmd+Shift+. | Mostrar/ocultar arquivos ocultos |
+| Letras/Números | Saltar para item pelo nome |
