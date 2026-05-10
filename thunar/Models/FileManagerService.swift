@@ -355,21 +355,25 @@ class FileManagerService: ObservableObject {
         metadataQuery.searchScopes = [NSMetadataQueryLocalComputerScope]
         metadataQuery.predicate = NSPredicate(format: "kMDItemUserTags == %@", tag.rawValue)
 
+        let handler: @Sendable (Notification) -> Void = { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.updateSearchResults()
+            }
+        }
+
         NotificationCenter.default.addObserver(
             forName: .NSMetadataQueryDidFinishGathering,
             object: metadataQuery,
-            queue: .main
-        ) { [weak self] _ in
-            self?.updateSearchResults()
-        }
+            queue: .main,
+            using: handler
+        )
 
         NotificationCenter.default.addObserver(
             forName: .NSMetadataQueryDidUpdate,
             object: metadataQuery,
-            queue: .main
-        ) { [weak self] _ in
-            self?.updateSearchResults()
-        }
+            queue: .main,
+            using: handler
+        )
 
         metadataQuery.start()
     }
@@ -381,6 +385,9 @@ class FileManagerService: ObservableObject {
     }
 
     private func updateSearchResults() {
+        // Guard contra notificações que chegam depois do usuário ter saído da busca por etiqueta
+        // (evita sobrescrever a navegação atual com resultados antigos da query).
+        guard searchTag != nil else { return }
         let results = metadataQuery.results as? [NSMetadataItem] ?? []
         let items = results.compactMap { item -> FileItem? in
             guard let path = item.value(forAttribute: NSMetadataItemPathKey) as? String else { return nil }

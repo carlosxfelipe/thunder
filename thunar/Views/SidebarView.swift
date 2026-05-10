@@ -7,23 +7,51 @@
 
 import SwiftUI
 
+enum SidebarSelection: Hashable {
+    case place(SidebarItem)
+    case volume(URL)
+}
+
 struct SidebarView: View {
     @ObservedObject var fileManager: FileManagerService
-    @State private var selectedItem: SidebarItem?
+    @StateObject private var volumesService = VolumesService()
+    @State private var selection: SidebarSelection?
 
     var body: some View {
-        List(selection: $selectedItem) {
+        List(selection: $selection) {
             Section("Locais") {
                 ForEach(SidebarItem.allCases) { item in
                     SidebarRow(item: item)
-                        .tag(item)
+                        .tag(SidebarSelection.place(item))
+                }
+            }
+
+            if !volumesService.volumes.isEmpty {
+                Section("Dispositivos") {
+                    ForEach(volumesService.volumes) { volume in
+                        Label(volume.name, systemImage: volume.icon)
+                            .font(.system(size: 13))
+                            .tag(SidebarSelection.volume(volume.url))
+                            .help(volume.formattedCapacity ?? volume.url.path)
+                            .contextMenu {
+                                Button("Abrir") {
+                                    fileManager.navigateTo(volume.url)
+                                }
+                                if volume.isEjectable || volume.isRemovable {
+                                    Divider()
+                                    Button("Ejetar") {
+                                        _ = volumesService.eject(volume)
+                                    }
+                                }
+                            }
+                    }
                 }
             }
 
             Section("Etiquetas") {
                 ForEach(FinderTag.allCases) { tag in
                     Button(action: {
-                        selectedItem = nil
+                        selection = nil
                         if fileManager.searchTag == tag {
                             fileManager.searchTag = nil
                         } else {
@@ -48,10 +76,16 @@ struct SidebarView: View {
                 }
             }
         }
-        .onChange(of: selectedItem) {
-            if let item = selectedItem {
-                fileManager.searchTag = nil
+        .onChange(of: selection) {
+            switch selection {
+            case let .place(item):
+                if fileManager.searchTag != nil { fileManager.searchTag = nil }
                 fileManager.navigateTo(item.url)
+            case let .volume(url):
+                if fileManager.searchTag != nil { fileManager.searchTag = nil }
+                fileManager.navigateTo(url)
+            case .none:
+                break
             }
         }
         .listStyle(.sidebar)
