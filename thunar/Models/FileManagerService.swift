@@ -16,12 +16,11 @@ class FileManagerService: ObservableObject {
     @Published var selectedFiles: Set<FileItem> = []
     @Published var navigationHistory: [URL] = []
     @Published var historyIndex: Int = 0
-    enum ClipboardAction {
-        case copy
-        case cut
-    }
+    private let clipboardService = ClipboardService.shared
 
-    @Published var clipboard: (urls: [URL], action: ClipboardAction)? = nil
+    var clipboard: (urls: [URL], action: ClipboardService.ClipboardAction)? {
+        clipboardService.clipboard
+    }
     @Published var errorMessage: String? = nil
     @Published var statusMessage: String? = nil
     @Published var isProcessing: Bool = false
@@ -255,19 +254,19 @@ class FileManagerService: ObservableObject {
     }
 
     func copyItems(_ items: [FileItem]) {
-        clipboard = (items.map { $0.url }, .copy)
+        clipboardService.clipboard = (items.map { $0.url }, .copy)
         let count = items.count
         postStatus(count == 1 ? "\"\(items[0].name)\" copiado" : "\(count) itens copiados")
     }
 
     func cutItems(_ items: [FileItem]) {
-        clipboard = (items.map { $0.url }, .cut)
+        clipboardService.clipboard = (items.map { $0.url }, .cut)
         let count = items.count
         postStatus(count == 1 ? "\"\(items[0].name)\" recortado" : "\(count) itens recortados")
     }
 
     func pasteItems() {
-        guard let clipboardItem = clipboard else { return }
+        guard let clipboardItem = clipboardService.clipboard else { return }
         let count = clipboardItem.urls.count
         let actionLabel = clipboardItem.action == .copy ? "Colando" : "Movendo"
         postStatus(count == 1 ? "\(actionLabel) \"\(clipboardItem.urls[0].lastPathComponent)\"..." : "\(actionLabel) \(count) itens...", autoClear: false)
@@ -303,7 +302,7 @@ class FileManagerService: ObservableObject {
         }
 
         if clipboardItem.action == .cut {
-            clipboard = nil
+            clipboardService.clipboard = nil
         }
         isProcessing = false
         loadDirectory()

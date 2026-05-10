@@ -17,6 +17,7 @@ enum ViewMode {
 
 struct FileListView: View {
     @ObservedObject var fileManager: FileManagerService
+    @ObservedObject private var clipboardService = ClipboardService.shared
     @State private var viewMode: ViewMode = .list
     @State private var showingCreateFolder = false
     @State private var showingCreateFile = false
@@ -72,7 +73,7 @@ struct FileListView: View {
                 Button(action: { fileManager.pasteItems() }) {
                     Image(systemName: "doc.on.clipboard")
                 }
-                .disabled(fileManager.clipboard == nil)
+                .disabled(clipboardService.clipboard == nil)
                 .help("Colar")
 
                 Button(action: { fileManager.showHiddenFiles.toggle() }) {
@@ -391,7 +392,7 @@ struct FileListView: View {
             Button(action: { fileManager.pasteItems() }) {
                 Label("Colar", systemImage: "doc.on.clipboard")
             }
-            .disabled(fileManager.clipboard == nil)
+            .disabled(clipboardService.clipboard == nil)
 
             Button(action: { fileManager.openInTerminal() }) {
                 Label("Abrir no Terminal", systemImage: "terminal")
@@ -540,7 +541,7 @@ struct FileListView: View {
             Button(action: { fileManager.pasteItems() }) {
                 Label("Colar", systemImage: "doc.on.clipboard")
             }
-            .disabled(fileManager.clipboard == nil)
+            .disabled(clipboardService.clipboard == nil)
 
             Button(action: { fileManager.openInTerminal() }) {
                 Label("Abrir no Terminal", systemImage: "terminal")

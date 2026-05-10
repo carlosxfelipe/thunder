@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		07E3F98C2FAFC440000811F7 /* thunar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = thunar.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		07E3F98C2FAFC440000811F7 /* thunar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = thunar.app; path = Thunar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
