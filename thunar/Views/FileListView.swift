@@ -33,6 +33,8 @@ struct FileListView: View {
     @State private var sortOrder = [KeyPathComparator(\FileItem.name)]
     @State private var itemToDelete: FileItem?
     @State private var previewURL: URL?
+    @State private var selectionRectStart: CGPoint? = nil
+    @State private var selectionRectEnd: CGPoint? = nil
 
     var sortedFiles: [FileItem] {
         fileManager.files.sorted(using: sortOrder)
@@ -451,171 +453,183 @@ struct FileListView: View {
     var iconView: some View {
         GeometryReader { geo in
             ScrollView {
-                LazyVGrid(columns: [
-                    GridItem(.adaptive(minimum: 100), spacing: 16),
-                ], spacing: 16) {
-                    ForEach(sortedFiles) { item in
-                        VStack(spacing: 8) {
-                            ZStack(alignment: .topTrailing) {
-                                FileIconView(item: item, size: CGSize(width: 56, height: 56))
-                                    .foregroundColor(.accentColor)
-                                if !item.tags.isEmpty {
-                                    HStack(spacing: 1) {
-                                        ForEach(item.tags) { tag in
-                                            Circle()
-                                                .fill(tag.color)
-                                                .frame(width: 8, height: 8)
-                                        }
+                ZStack(alignment: .topLeading) {
+                    // Background for deselection and marquee start
+                    Color.white.opacity(0.0001)
+                        .frame(minHeight: geo.size.height)
+                        .onTapGesture {
+                            selectedFileIDs = []
+                            selectionAnchorID = nil
+                            lastSelectedID = nil
+                        }
+                        .gesture(
+                            DragGesture(minimumDistance: 10)
+                                .onChanged { value in
+                                    if selectionRectStart == nil {
+                                        selectionRectStart = value.startLocation
                                     }
-                                    .offset(x: 4, y: -2)
+                                    selectionRectEnd = value.location
+                                    updateSelectionFromMarquee()
                                 }
-                            }
-                            Text(item.name)
-                                .font(.system(size: 11))
-                                .lineLimit(2)
-                                .multilineTextAlignment(.center)
-                                .frame(maxWidth: 100)
-                        }
-                        .padding(12)
-                        .background(selectedFileIDs.contains(item.id) ? Color.accentColor.opacity(0.2) : Color.clear)
-                        .cornerRadius(8)
-                        .onTapGesture(count: 2) {
-                            if item.isDirectory {
-                                fileManager.navigateTo(item.url)
-                            } else {
-                                NSWorkspace.shared.open(item.url)
-                            }
-                        }
-                        .simultaneousGesture(
-                            TapGesture().modifiers(.shift).onEnded {
-                                if let anchorId = selectionAnchorID ?? lastSelectedID,
-                                   let anchorIndex = sortedFiles.firstIndex(where: { $0.id == anchorId }),
-                                   let currentIndex = sortedFiles.firstIndex(where: { $0.id == item.id })
-                                {
-                                    let columnsCount = max(1, Int((gridWidth - 16) / 116))
-                                    let startRow = anchorIndex / columnsCount
-                                    let startCol = anchorIndex % columnsCount
-                                    let endRow = currentIndex / columnsCount
-                                    let endCol = currentIndex % columnsCount
+                                .onEnded { _ in
+                                    selectionRectStart = nil
+                                    selectionRectEnd = nil
+                                }
+                        )
 
-                                    let minRow = min(startRow, endRow)
-                                    let maxRow = max(startRow, endRow)
-                                    let minCol = min(startCol, endCol)
-                                    let maxCol = max(startCol, endCol)
-
-                                    var boxIDs: Set<UUID> = []
-                                    for r in minRow ... maxRow {
-                                        for c in minCol ... maxCol {
-                                            let idx = r * columnsCount + c
-                                            if idx >= 0, idx < sortedFiles.count {
-                                                boxIDs.insert(sortedFiles[idx].id)
+                    LazyVGrid(columns: [
+                        GridItem(.adaptive(minimum: 100), spacing: 16),
+                    ], spacing: 16) {
+                        ForEach(sortedFiles) { item in
+                            VStack(spacing: 8) {
+                                ZStack(alignment: .topTrailing) {
+                                    FileIconView(item: item, size: CGSize(width: 56, height: 56))
+                                        .foregroundColor(.accentColor)
+                                    if !item.tags.isEmpty {
+                                        HStack(spacing: 1) {
+                                            ForEach(item.tags) { tag in
+                                                Circle()
+                                                    .fill(tag.color)
+                                                    .frame(width: 8, height: 8)
                                             }
                                         }
+                                        .offset(x: 4, y: -2)
                                     }
-                                    selectedFileIDs = boxIDs
-                                } else {
-                                    selectedFileIDs = [item.id]
-                                    selectionAnchorID = item.id
                                 }
-                                lastSelectedID = item.id
+                                Text(item.name)
+                                    .font(.system(size: 11))
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.center)
+                                    .frame(maxWidth: 100)
                             }
-                        )
-                        .simultaneousGesture(
-                            TapGesture().onEnded {
-                                if NSApp.currentEvent?.modifierFlags.contains(.command) == true {
-                                    if selectedFileIDs.contains(item.id) {
-                                        selectedFileIDs.remove(item.id)
-                                    } else {
-                                        selectedFileIDs.insert(item.id)
-                                    }
-                                    lastSelectedID = item.id
-                                } else {
-                                    selectedFileIDs = [item.id]
-                                    lastSelectedID = item.id
-                                    selectionAnchorID = item.id
-                                }
-                            }
-                        )
-                        .contextMenu {
-                            Button(action: {
+                            .padding(12)
+                            .background(selectedFileIDs.contains(item.id) ? Color.accentColor.opacity(0.2) : Color.clear)
+                            .cornerRadius(8)
+                            .onTapGesture(count: 2) {
                                 if item.isDirectory {
                                     fileManager.navigateTo(item.url)
                                 } else {
                                     NSWorkspace.shared.open(item.url)
                                 }
-                            }) {
-                                Label("Abrir", systemImage: "arrow.right.circle")
                             }
-                            Button(action: { editingItem = item }) {
-                                Label("Renomear", systemImage: "pencil")
-                            }
-                            if item.isDirectory {
-                                Button(action: { fileManager.openInTerminal(url: item.url) }) {
-                                    Label("Abrir no Terminal", systemImage: "terminal")
+                            .simultaneousGesture(
+                                TapGesture().modifiers(.shift).onEnded {
+                                    selectRange(to: item)
                                 }
-                            }
-                            Button(action: {
-                                let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
-                                fileManager.copyItems(items)
-                            }) {
-                                Label("Copiar", systemImage: "doc.on.doc")
-                            }
-                            Button(action: {
-                                let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
-                                fileManager.cutItems(items)
-                            }) {
-                                Label("Recortar", systemImage: "scissors")
-                            }
-                            Divider()
-                            Button(action: { fileManager.compressItem(item) }) {
-                                Label("Comprimir", systemImage: "archivebox")
-                            }
-                            Divider()
-                            Menu {
-                                ForEach(FinderTag.allCases) { tag in
-                                    Button(action: {
-                                        let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
-                                        if item.tags.contains(tag) {
-                                            fileManager.removeTag(tag, from: items)
+                            )
+                            .simultaneousGesture(
+                                TapGesture().onEnded {
+                                    if NSApp.currentEvent?.modifierFlags.contains(.command) == true {
+                                        if selectedFileIDs.contains(item.id) {
+                                            selectedFileIDs.remove(item.id)
                                         } else {
-                                            fileManager.setTag(tag, on: items)
+                                            selectedFileIDs.insert(item.id)
                                         }
-                                    }) {
-                                        HStack {
-                                            Circle()
-                                                .fill(tag.color)
-                                                .frame(width: 10, height: 10)
-                                            Text(tag.rawValue)
+                                        lastSelectedID = item.id
+                                    } else {
+                                        selectedFileIDs = [item.id]
+                                        lastSelectedID = item.id
+                                        selectionAnchorID = item.id
+                                    }
+                                }
+                            )
+                            .contextMenu {
+                                // ... (context menu items remain same)
+                                Button(action: {
+                                    if item.isDirectory {
+                                        fileManager.navigateTo(item.url)
+                                    } else {
+                                        NSWorkspace.shared.open(item.url)
+                                    }
+                                }) {
+                                    Label("Abrir", systemImage: "arrow.right.circle")
+                                }
+                                Button(action: { editingItem = item }) {
+                                    Label("Renomear", systemImage: "pencil")
+                                }
+                                if item.isDirectory {
+                                    Button(action: { fileManager.openInTerminal(url: item.url) }) {
+                                        Label("Abrir no Terminal", systemImage: "terminal")
+                                    }
+                                }
+                                Button(action: {
+                                    let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+                                    fileManager.copyItems(items)
+                                }) {
+                                    Label("Copiar", systemImage: "doc.on.doc")
+                                }
+                                Button(action: {
+                                    let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+                                    fileManager.cutItems(items)
+                                }) {
+                                    Label("Recortar", systemImage: "scissors")
+                                }
+                                Divider()
+                                Button(action: { fileManager.compressItem(item) }) {
+                                    Label("Comprimir", systemImage: "archivebox")
+                                }
+                                Divider()
+                                Menu {
+                                    ForEach(FinderTag.allCases) { tag in
+                                        Button(action: {
+                                            let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
                                             if item.tags.contains(tag) {
-                                                Spacer()
-                                                Image(systemName: "checkmark")
+                                                fileManager.removeTag(tag, from: items)
+                                            } else {
+                                                fileManager.setTag(tag, on: items)
+                                            }
+                                        }) {
+                                            HStack {
+                                                Circle()
+                                                    .fill(tag.color)
+                                                    .frame(width: 10, height: 10)
+                                                Text(tag.rawValue)
+                                                if item.tags.contains(tag) {
+                                                    Spacer()
+                                                    Image(systemName: "checkmark")
+                                                }
                                             }
                                         }
                                     }
-                                }
-                                if !item.tags.isEmpty {
-                                    Divider()
-                                    Button(action: {
-                                        let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
-                                        fileManager.removeAllTags(from: items)
-                                    }) {
-                                        Label("Remover Todas", systemImage: "xmark")
+                                    if !item.tags.isEmpty {
+                                        Divider()
+                                        Button(action: {
+                                            let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+                                            fileManager.removeAllTags(from: items)
+                                        }) {
+                                            Label("Remover Todas", systemImage: "xmark")
+                                        }
                                     }
+                                } label: {
+                                    Label("Etiquetas", systemImage: "tag")
                                 }
-                            } label: {
-                                Label("Etiquetas", systemImage: "tag")
-                            }
-                            Divider()
-                            Button(action: { fileManager.deleteItem(item) }) {
-                                Label("Mover para Lixeira", systemImage: "trash")
-                            }
-                            Button(role: .destructive, action: { itemToDelete = item }) {
-                                Label("Excluir Permanentemente", systemImage: "xmark.bin")
+                                Divider()
+                                Button(action: { fileManager.deleteItem(item) }) {
+                                    Label("Mover para Lixeira", systemImage: "trash")
+                                }
+                                Button(role: .destructive, action: { itemToDelete = item }) {
+                                    Label("Excluir Permanentemente", systemImage: "xmark.bin")
+                                }
                             }
                         }
                     }
+                    .padding(16)
+
+                    // Marquee Visual
+                    if let start = selectionRectStart, let end = selectionRectEnd {
+                        Rectangle()
+                            .fill(Color.accentColor.opacity(0.3))
+                            .stroke(Color.accentColor, lineWidth: 1)
+                            .frame(
+                                width: abs(end.x - start.x),
+                                height: abs(end.y - start.y)
+                            )
+                            .position(
+                                x: (start.x + end.x) / 2,
+                                y: (start.y + end.y) / 2
+                            )
+                    }
                 }
-                .padding(16)
             }
             .onChange(of: geo.size.width) { _, newWidth in
                 gridWidth = newWidth
@@ -642,6 +656,70 @@ struct FileListView: View {
                 Label("Abrir no Terminal", systemImage: "terminal")
             }
         }
+    }
+
+    private func selectRange(to item: FileItem) {
+        if let anchorId = selectionAnchorID ?? lastSelectedID,
+           let anchorIndex = sortedFiles.firstIndex(where: { $0.id == anchorId }),
+           let currentIndex = sortedFiles.firstIndex(where: { $0.id == item.id })
+        {
+            let columnsCount = max(1, Int((gridWidth - 16) / 116))
+            let startRow = anchorIndex / columnsCount
+            let startCol = anchorIndex % columnsCount
+            let endRow = currentIndex / columnsCount
+            let endCol = currentIndex % columnsCount
+
+            let minRow = min(startRow, endRow)
+            let maxRow = max(startRow, endRow)
+            let minCol = min(startCol, endCol)
+            let maxCol = max(startCol, endCol)
+
+            var boxIDs: Set<UUID> = []
+            for r in minRow ... maxRow {
+                for c in minCol ... maxCol {
+                    let idx = r * columnsCount + c
+                    if idx >= 0, idx < sortedFiles.count {
+                        boxIDs.insert(sortedFiles[idx].id)
+                    }
+                }
+            }
+            selectedFileIDs = boxIDs
+        } else {
+            selectedFileIDs = [item.id]
+            selectionAnchorID = item.id
+        }
+        lastSelectedID = item.id
+    }
+
+    private func updateSelectionFromMarquee() {
+        guard let start = selectionRectStart, let end = selectionRectEnd else { return }
+
+        let minX = min(start.x, end.x)
+        let maxX = max(start.x, end.x)
+        let minY = min(start.y, end.y)
+        let maxY = max(start.y, end.y)
+
+        let columnsCount = max(1, Int((gridWidth - 16) / 116))
+        let itemSize: CGFloat = 116 // Estimativa do tamanho do item incluindo padding/spacing
+
+        var newSelection: Set<UUID> = []
+
+        for (index, item) in sortedFiles.enumerated() {
+            let row = index / columnsCount
+            let col = index % columnsCount
+
+            let itemX = CGFloat(col) * itemSize + 16
+            let itemY = CGFloat(row) * itemSize + 16
+
+            let itemRect = CGRect(x: itemX, y: itemY, width: 100, height: 100)
+            let marqueeRect = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+
+            if itemRect.intersects(marqueeRect) {
+                newSelection.insert(item.id)
+            }
+        }
+
+        selectedFileIDs = newSelection
     }
 }
 
