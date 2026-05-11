@@ -31,7 +31,6 @@ struct BreadcrumbView: View {
             if index == 0 {
                 // Root or first component
                 Button(action: {
-                    fileManager.searchTag = nil
                     fileManager.navigateTo(URL(fileURLWithPath: "/"))
                 }) {
                     Image(systemName: "house.fill")
@@ -47,7 +46,6 @@ struct BreadcrumbView: View {
                         .foregroundColor(.secondary)
 
                     Button(action: {
-                        fileManager.searchTag = nil
                         fileManager.navigateTo(URL(fileURLWithPath: currentPath))
                     }) {
                         Text(component)

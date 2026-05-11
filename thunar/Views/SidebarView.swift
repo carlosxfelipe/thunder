@@ -24,7 +24,6 @@ struct SidebarView: View {
                     SidebarRow(item: item)
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            fileManager.searchTag = nil
                             selection = .place(item)
                             fileManager.navigateTo(item.url)
                         }
@@ -40,7 +39,6 @@ struct SidebarView: View {
                         }
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            fileManager.searchTag = nil
                             selection = .volume(volume.url)
                             fileManager.navigateTo(volume.url)
                         }
