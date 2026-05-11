@@ -227,16 +227,30 @@ struct FileListView: View {
                 }
 
                 let columnsCount = max(1, Int((gridWidth - 16) / 116))
+                let currentRow = currentIndex / columnsCount
+                let currentCol = currentIndex % columnsCount
+                let lastIndex = currentSortedFiles.count - 1
                 var newIndex = currentIndex
 
                 if keyPress.key == .leftArrow {
-                    newIndex = max(0, currentIndex - 1)
+                    if currentCol > 0 {
+                        newIndex = currentIndex - 1
+                    }
                 } else if keyPress.key == .rightArrow {
-                    newIndex = min(currentSortedFiles.count - 1, currentIndex + 1)
+                    let rowStart = currentRow * columnsCount
+                    let lastColInRow = min(columnsCount - 1, lastIndex - rowStart)
+                    if currentCol < lastColInRow {
+                        newIndex = currentIndex + 1
+                    }
                 } else if keyPress.key == .upArrow {
-                    newIndex = max(0, currentIndex - columnsCount)
+                    if currentRow > 0 {
+                        newIndex = currentIndex - columnsCount
+                    }
                 } else if keyPress.key == .downArrow {
-                    newIndex = min(currentSortedFiles.count - 1, currentIndex + columnsCount)
+                    let candidate = currentIndex + columnsCount
+                    if candidate <= lastIndex {
+                        newIndex = candidate
+                    }
                 }
 
                 if newIndex != currentIndex {
