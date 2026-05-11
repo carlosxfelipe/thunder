@@ -10,7 +10,7 @@ import QuickLook
 import QuickLookThumbnailing
 import SwiftUI
 
-enum ViewMode {
+enum ViewMode: String {
     case list
     case icons
 }
@@ -18,7 +18,7 @@ enum ViewMode {
 struct FileListView: View {
     @ObservedObject var fileManager: FileManagerService
     @ObservedObject private var clipboardService = ClipboardService.shared
-    @State private var viewMode: ViewMode = .list
+    @AppStorage("viewMode") private var viewMode: ViewMode = .list
     @State private var showingCreateFolder = false
     @State private var showingCreateFile = false
     @State private var newFolderName = ""
