@@ -138,6 +138,10 @@ class FileManagerService: ObservableObject {
     }
 
     func navigateTo(_ url: URL) {
+        if searchTag != nil {
+            searchTag = nil
+        }
+
         // Add to history if we're not just going back/forward
         if historyIndex == navigationHistory.count - 1 {
             if navigationHistory.last != url {
@@ -158,6 +162,9 @@ class FileManagerService: ObservableObject {
 
     func navigateBack() {
         guard historyIndex > 0 else { return }
+        if searchTag != nil {
+            searchTag = nil
+        }
         historyIndex -= 1
         let url = navigationHistory[historyIndex]
         loadDirectory(url)
@@ -165,12 +172,18 @@ class FileManagerService: ObservableObject {
 
     func navigateForward() {
         guard historyIndex < navigationHistory.count - 1 else { return }
+        if searchTag != nil {
+            searchTag = nil
+        }
         historyIndex += 1
         let url = navigationHistory[historyIndex]
         loadDirectory(url)
     }
 
     func navigateToParent() {
+        if searchTag != nil {
+            searchTag = nil
+        }
         let parent = currentDirectory.deletingLastPathComponent()
         navigateTo(parent)
     }

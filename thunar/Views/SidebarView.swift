@@ -22,6 +22,12 @@ struct SidebarView: View {
             Section("Locais") {
                 ForEach(SidebarItem.allCases) { item in
                     SidebarRow(item: item)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            fileManager.searchTag = nil
+                            selection = .place(item)
+                            fileManager.navigateTo(item.url)
+                        }
                         .tag(SidebarSelection.place(item))
                 }
             }
@@ -31,6 +37,12 @@ struct SidebarView: View {
                     ForEach(volumesService.volumes) { volume in
                         VolumeRow(volume: volume) {
                             _ = volumesService.eject(volume)
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            fileManager.searchTag = nil
+                            selection = .volume(volume.url)
+                            fileManager.navigateTo(volume.url)
                         }
                         .tag(SidebarSelection.volume(volume.url))
                         .help(volume.formattedCapacity ?? volume.url.path)
