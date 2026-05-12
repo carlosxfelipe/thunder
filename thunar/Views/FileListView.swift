@@ -31,6 +31,7 @@ struct FileListView: View {
     @State private var gridWidth: CGFloat = 600
     @State private var sortOrder = [KeyPathComparator(\FileItem.name)]
     @State private var itemToDelete: FileItem?
+    @State private var infoItem: FileItem?
     @State private var previewURL: URL?
     @State private var selectionRectStart: CGPoint? = nil
     @State private var selectionRectEnd: CGPoint? = nil
@@ -199,6 +200,15 @@ struct FileListView: View {
             .onAppear {
                 newItemName = item.name
             }
+        }
+        .sheet(item: $infoItem) { item in
+            ItemInfoSheet(
+                item: item,
+                isPresented: Binding(
+                    get: { infoItem != nil },
+                    set: { if !$0 { infoItem = nil } }
+                )
+            )
         }
         .alert("Erro", isPresented: Binding<Bool>(
             get: { fileManager.errorMessage != nil },
@@ -478,6 +488,9 @@ struct FileListView: View {
                 Button(action: { editingItem = item }) {
                     Label("Renomear", systemImage: "pencil")
                 }
+                Button(action: { infoItem = item }) {
+                    Label("Obter Informações", systemImage: "info.circle")
+                }
                 if item.isDirectory {
                     Button(action: { fileManager.openInTerminal(url: item.url) }) {
                         Label("Abrir no Terminal", systemImage: "terminal")
@@ -676,6 +689,9 @@ struct FileListView: View {
                                 }
                                 Button(action: { editingItem = item }) {
                                     Label("Renomear", systemImage: "pencil")
+                                }
+                                Button(action: { infoItem = item }) {
+                                    Label("Obter Informações", systemImage: "info.circle")
                                 }
                                 if item.isDirectory {
                                     Button(action: { fileManager.openInTerminal(url: item.url) }) {
@@ -918,6 +934,153 @@ struct CreateFileSheet: View {
         }
         .padding(24)
         .frame(width: 300)
+    }
+}
+
+struct ItemInfoSheet: View {
+    let item: FileItem
+    @Binding var isPresented: Bool
+
+    @State private var totalSize: Int64?
+    @State private var itemCount: Int?
+    @State private var isCalculatingSize = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(spacing: 14) {
+                FileIconView(item: item, size: CGSize(width: 48, height: 48))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(item.name)
+                        .font(.headline)
+                        .lineLimit(2)
+                    Text(item.isDirectory ? "Pasta" : fileTypeDescription)
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 10) {
+                InfoRow(label: "Local", value: item.url.deletingLastPathComponent().path)
+                InfoRow(label: "Criado", value: formattedDate(item.creationDate))
+                InfoRow(label: "Modificado", value: formattedDate(item.modificationDate))
+                InfoRow(label: "Tamanho", value: sizeText)
+                if let itemCount {
+                    InfoRow(label: "Itens", value: "\(itemCount)")
+                }
+                InfoRow(label: "Caminho completo", value: item.url.path)
+            }
+
+            Divider()
+
+            HStack {
+                Spacer()
+                Button("Fechar") {
+                    isPresented = false
+                }
+                .keyboardShortcut(.cancelAction)
+            }
+        }
+        .padding(24)
+        .frame(width: 460)
+        .task(id: item.id) {
+            await loadSizeDetails()
+        }
+    }
+
+    private var fileTypeDescription: String {
+        let ext = item.url.pathExtension
+        if ext.isEmpty {
+            return "Arquivo"
+        }
+        return "Arquivo \(ext.uppercased())"
+    }
+
+    private var sizeText: String {
+        if isCalculatingSize {
+            return "Calculando..."
+        }
+        if let totalSize {
+            return formattedSize(totalSize)
+        }
+        return item.formattedSize
+    }
+
+    private func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        formatter.locale = Locale(identifier: "pt_BR")
+        return formatter.string(from: date)
+    }
+
+    private func formattedSize(_ bytes: Int64) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.allowedUnits = [.useBytes, .useKB, .useMB, .useGB, .useTB]
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: bytes)
+    }
+
+    private func loadSizeDetails() async {
+        if !item.isDirectory {
+            totalSize = item.fileSize
+            itemCount = nil
+            return
+        }
+
+        isCalculatingSize = true
+        let url = item.url
+
+        let details = await Task.detached {
+            var total: Int64 = 0
+            var count = 0
+            let keys: Set<URLResourceKey> = [.isRegularFileKey, .fileAllocatedSizeKey, .totalFileAllocatedSizeKey]
+
+            guard let enumerator = FileManager.default.enumerator(
+                at: url,
+                includingPropertiesForKeys: Array(keys),
+                options: [.skipsHiddenFiles, .skipsPackageDescendants]
+            ) else {
+                return (total, count)
+            }
+
+            for case let childURL as URL in enumerator {
+                if Task.isCancelled {
+                    return (total, count)
+                }
+
+                count += 1
+                let values = try? childURL.resourceValues(forKeys: keys)
+                total += Int64(values?.totalFileAllocatedSize ?? values?.fileAllocatedSize ?? 0)
+            }
+
+            return (total, count)
+        }.value
+
+        totalSize = details.0
+        itemCount = details.1
+        isCalculatingSize = false
+    }
+}
+
+struct InfoRow: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(label)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.secondary)
+                .frame(width: 110, alignment: .trailing)
+            Text(value)
+                .font(.system(size: 12))
+                .textSelection(.enabled)
+                .lineLimit(3)
+                .truncationMode(.middle)
+            Spacer(minLength: 0)
+        }
     }
 }
 
