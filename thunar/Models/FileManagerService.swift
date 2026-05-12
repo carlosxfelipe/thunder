@@ -48,6 +48,8 @@ class FileManagerService: ObservableObject {
 
     private let fileManager = FileManager.default
     private var volumeUnmountObserver: NSObjectProtocol?
+    private var fileSystemChangeObserver: NSObjectProtocol?
+    private static let fileSystemDidChangeNotification = Notification.Name("FileManagerServiceFileSystemDidChange")
 
     init() {
         let home = fileManager.homeDirectoryForCurrentUser
@@ -61,6 +63,9 @@ class FileManagerService: ObservableObject {
     deinit {
         if let observer = volumeUnmountObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(observer)
+        }
+        if let observer = fileSystemChangeObserver {
+            NotificationCenter.default.removeObserver(observer)
         }
     }
 
@@ -79,6 +84,36 @@ class FileManagerService: ObservableObject {
                 self?.navigateAwayIfInside(unmountedURL)
             }
         }
+
+        fileSystemChangeObserver = NotificationCenter.default.addObserver(
+            forName: Self.fileSystemDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            let urls = notification.userInfo?["urls"] as? [URL] ?? []
+            Task { @MainActor [weak self] in
+                self?.reloadIfViewingAny(urls)
+            }
+        }
+    }
+
+    private func reloadIfViewingAny(_ urls: [URL]) {
+        let currentPath = currentDirectory.standardizedFileURL.path
+        let shouldReload = urls.contains { url in
+            url.standardizedFileURL.path == currentPath
+        }
+
+        if shouldReload {
+            loadDirectory()
+        }
+    }
+
+    private func postFileSystemChange(for urls: [URL]) {
+        NotificationCenter.default.post(
+            name: Self.fileSystemDidChangeNotification,
+            object: self,
+            userInfo: ["urls": urls]
+        )
     }
 
     private func navigateAwayIfInside(_ unmountedURL: URL) {
@@ -403,6 +438,7 @@ class FileManagerService: ObservableObject {
         let actionLabel = clipboardItem.action == .copy ? "Colando" : "Movendo"
         postStatus(count == 1 ? "\(actionLabel) \"\(clipboardItem.urls[0].lastPathComponent)\"..." : "\(actionLabel) \(count) itens...", autoClear: false)
         isProcessing = true
+        var affectedDirectories: Set<URL> = [currentDirectory]
 
         for sourceURL in clipboardItem.urls {
             var destinationURL = currentDirectory.appendingPathComponent(sourceURL.lastPathComponent)
@@ -427,6 +463,7 @@ class FileManagerService: ObservableObject {
                     try fileManager.copyItem(at: sourceURL, to: destinationURL)
                 } else if clipboardItem.action == .cut {
                     try fileManager.moveItem(at: sourceURL, to: destinationURL)
+                    affectedDirectories.insert(sourceURL.deletingLastPathComponent())
                 }
             } catch {
                 errorMessage = "Erro ao colar: \(error.localizedDescription)"
@@ -438,6 +475,7 @@ class FileManagerService: ObservableObject {
         }
         isProcessing = false
         loadDirectory()
+        postFileSystemChange(for: Array(affectedDirectories))
         let doneLabel = clipboardItem.action == .copy ? "colado" : "movido"
         postStatus(count == 1 ? "\"\(clipboardItem.urls[0].lastPathComponent)\" \(doneLabel) com sucesso" : "\(count) itens \(doneLabel)s com sucesso")
     }
