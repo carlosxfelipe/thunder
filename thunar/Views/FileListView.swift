@@ -29,15 +29,37 @@ struct FileListView: View {
     @State private var lastSelectedID: UUID?
     @State private var selectionAnchorID: UUID?
     @State private var gridWidth: CGFloat = 600
-    @FocusState private var isListFocused: Bool
     @State private var sortOrder = [KeyPathComparator(\FileItem.name)]
     @State private var itemToDelete: FileItem?
     @State private var previewURL: URL?
     @State private var selectionRectStart: CGPoint? = nil
     @State private var selectionRectEnd: CGPoint? = nil
+    @State private var searchText = ""
+    @FocusState private var isListFocused: Bool
+    @FocusState private var isSearchFocused: Bool
 
     var sortedFiles: [FileItem] {
         fileManager.files.sorted(using: sortOrder)
+    }
+
+    private var isSearching: Bool {
+        !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func locationText(for item: FileItem) -> String {
+        let parentURL = item.url.deletingLastPathComponent()
+        let rootPath = fileManager.currentDirectory.standardizedFileURL.path
+        let parentPath = parentURL.standardizedFileURL.path
+
+        if parentPath == rootPath {
+            return "."
+        }
+
+        if parentPath.hasPrefix(rootPath + "/") {
+            return String(parentPath.dropFirst(rootPath.count + 1))
+        }
+
+        return parentPath
     }
 
     var body: some View {
@@ -60,6 +82,26 @@ struct FileListView: View {
                 .disabled(!fileManager.canGoToParent)
 
                 Spacer()
+
+                HStack(spacing: 6) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.secondary)
+                    TextField("Buscar", text: $searchText)
+                        .textFieldStyle(.plain)
+                        .focused($isSearchFocused)
+                    if !searchText.isEmpty {
+                        Button(action: { searchText = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .frame(width: 220)
+                .background(Color(NSColor.controlBackgroundColor))
+                .cornerRadius(8)
 
                 Picker("View Mode", selection: $viewMode) {
                     Image(systemName: "list.bullet")
@@ -95,11 +137,36 @@ struct FileListView: View {
             .padding(.vertical, 8)
             .background(Color(NSColor.windowBackgroundColor))
 
-            // File list
-            if viewMode == .list {
-                listView
+            if isSearching {
+                HStack(spacing: 6) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.secondary)
+                    Text("Resultados em \(fileManager.currentDirectory.path)")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                    Spacer()
+                    Text("\(sortedFiles.count) \(sortedFiles.count == 1 ? "item" : "itens")")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color(NSColor.controlBackgroundColor))
+            }
+
+            if sortedFiles.isEmpty, isSearching, !fileManager.isProcessing {
+                ContentUnavailableView(
+                    "Nenhum item encontrado",
+                    systemImage: "magnifyingglass",
+                    description: Text("Tente buscar por outro nome.")
+                )
             } else {
-                iconView
+                if viewMode == .list {
+                    listView
+                } else {
+                    iconView
+                }
             }
         }
         .sheet(isPresented: $showingCreateFolder) {
@@ -185,6 +252,10 @@ struct FileListView: View {
                 Button(action: {
                     fileManager.showHiddenFiles.toggle()
                 }) { EmptyView() }.keyboardShortcut(".", modifiers: [.command, .shift])
+
+                Button(action: {
+                    isSearchFocused = true
+                }) { EmptyView() }.keyboardShortcut("f", modifiers: .command)
             }
             .opacity(0)
         )
@@ -194,8 +265,32 @@ struct FileListView: View {
         .onAppear {
             isListFocused = true
         }
+        .onChange(of: searchText) {
+            fileManager.searchFiles(matching: searchText)
+            let visibleIDs = Set(sortedFiles.map(\.id))
+            selectedFileIDs = selectedFileIDs.intersection(visibleIDs)
+            if let lastSelectedID, !visibleIDs.contains(lastSelectedID) {
+                self.lastSelectedID = nil
+            }
+            if let selectionAnchorID, !visibleIDs.contains(selectionAnchorID) {
+                self.selectionAnchorID = nil
+            }
+        }
+        .onChange(of: fileManager.currentDirectory) {
+            searchText = ""
+        }
         .onKeyPress { keyPress in
             if editingItem != nil || showingCreateFolder || showingCreateFile { return .ignored }
+
+            if keyPress.key == .escape, !searchText.isEmpty {
+                searchText = ""
+                isListFocused = true
+                return .handled
+            }
+
+            if isSearchFocused {
+                return .ignored
+            }
 
             if keyPress.characters == " " {
                 if let currentId = selectedFileIDs.first, let item = sortedFiles.first(where: { $0.id == currentId }) {
@@ -340,6 +435,18 @@ struct FileListView: View {
                         }
                     }
                 }
+            }
+
+            if isSearching {
+                TableColumn("Local") { item in
+                    Text(locationText(for: item))
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .help(item.url.deletingLastPathComponent().path)
+                }
+                .width(min: 180, ideal: 260)
             }
 
             TableColumn("Data", value: \.modificationDate) { item in
@@ -515,6 +622,15 @@ struct FileListView: View {
                                     .lineLimit(2)
                                     .multilineTextAlignment(.center)
                                     .frame(maxWidth: 100)
+                                if isSearching {
+                                    Text(locationText(for: item))
+                                        .font(.system(size: 9))
+                                        .foregroundColor(.secondary)
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.center)
+                                        .truncationMode(.middle)
+                                        .frame(maxWidth: 100)
+                                }
                             }
                             .padding(12)
                             .background(selectedFileIDs.contains(item.id) ? Color.accentColor.opacity(0.2) : Color.clear)

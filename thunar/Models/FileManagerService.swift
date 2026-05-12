@@ -44,6 +44,7 @@ class FileManagerService: ObservableObject {
 
     private var metadataQuery = NSMetadataQuery()
     private var queryObservers: [AnyCancellable] = []
+    private var fileSearchTask: Task<Void, Never>?
 
     private let fileManager = FileManager.default
     private var volumeUnmountObserver: NSObjectProtocol?
@@ -102,6 +103,12 @@ class FileManagerService: ObservableObject {
     }
 
     func loadDirectory(_ url: URL? = nil) {
+        fileSearchTask?.cancel()
+        fileSearchTask = nil
+        if statusMessage?.hasPrefix("Buscando ") == true {
+            isProcessing = false
+            statusMessage = nil
+        }
         let targetURL = url ?? currentDirectory
 
         Task {
@@ -133,6 +140,69 @@ class FileManagerService: ObservableObject {
                 } else {
                     self.errorMessage = "Não foi possível acessar a pasta.\nDetalhes: \(error.localizedDescription)"
                 }
+            }
+        }
+    }
+
+    func searchFiles(matching query: String) {
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        fileSearchTask?.cancel()
+
+        guard !trimmedQuery.isEmpty else {
+            fileSearchTask = nil
+            if statusMessage?.hasPrefix("Buscando ") == true {
+                isProcessing = false
+                statusMessage = nil
+            }
+            loadDirectory()
+            return
+        }
+
+        let rootURL = currentDirectory
+        let shouldShowHiddenFiles = showHiddenFiles
+        isProcessing = true
+        statusMessage = "Buscando \"\(trimmedQuery)\"..."
+
+        fileSearchTask = Task {
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            guard !Task.isCancelled else { return }
+
+            let results = await Task.detached {
+                var options: FileManager.DirectoryEnumerationOptions = [.skipsPackageDescendants]
+                if !shouldShowHiddenFiles {
+                    options.insert(.skipsHiddenFiles)
+                }
+
+                guard let enumerator = FileManager.default.enumerator(
+                    at: rootURL,
+                    includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey, .creationDateKey, .contentModificationDateKey, .tagNamesKey],
+                    options: options
+                ) else {
+                    return [FileItem]()
+                }
+
+                var items: [FileItem] = []
+                for case let url as URL in enumerator {
+                    if Task.isCancelled {
+                        return [FileItem]()
+                    }
+                    if url.lastPathComponent.localizedStandardContains(trimmedQuery) {
+                        items.append(FileItem(url: url))
+                    }
+                }
+
+                return items.sorted { $0.name.lowercased() < $1.name.lowercased() }
+            }.value
+
+            guard !Task.isCancelled else { return }
+
+            self.files = results
+            self.selectedFiles = []
+            self.isProcessing = false
+            if results.isEmpty {
+                self.postStatus("Nenhum item encontrado para \"\(trimmedQuery)\"")
+            } else {
+                self.statusMessage = nil
             }
         }
     }
