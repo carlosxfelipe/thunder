@@ -353,6 +353,27 @@ class FileManagerService: ObservableObject {
         }
     }
 
+    func deleteItems(_ items: [FileItem]) {
+        guard !items.isEmpty else { return }
+
+        var deletedCount = 0
+        for item in items {
+            do {
+                try fileManager.trashItem(at: item.url, resultingItemURL: nil)
+                deletedCount += 1
+            } catch {
+                errorMessage = "Erro ao excluir \"\(item.name)\": \(error.localizedDescription)"
+            }
+        }
+
+        loadDirectory()
+        if deletedCount == 1, let item = items.first {
+            postStatus("\"\(item.name)\" movido para a Lixeira")
+        } else if deletedCount > 1 {
+            postStatus("\(deletedCount) itens movidos para a Lixeira")
+        }
+    }
+
     func permanentDeleteItem(_ item: FileItem) {
         do {
             try fileManager.removeItem(at: item.url)
@@ -360,6 +381,27 @@ class FileManagerService: ObservableObject {
             postStatus("\"\(item.name)\" excluído permanentemente")
         } catch {
             errorMessage = "Erro ao excluir: \(error.localizedDescription)"
+        }
+    }
+
+    func permanentDeleteItems(_ items: [FileItem]) {
+        guard !items.isEmpty else { return }
+
+        var deletedCount = 0
+        for item in items {
+            do {
+                try fileManager.removeItem(at: item.url)
+                deletedCount += 1
+            } catch {
+                errorMessage = "Erro ao excluir \"\(item.name)\": \(error.localizedDescription)"
+            }
+        }
+
+        loadDirectory()
+        if deletedCount == 1, let item = items.first {
+            postStatus("\"\(item.name)\" excluído permanentemente")
+        } else if deletedCount > 1 {
+            postStatus("\(deletedCount) itens excluídos permanentemente")
         }
     }
 

@@ -30,7 +30,7 @@ struct FileListView: View {
     @State private var selectionAnchorID: UUID?
     @State private var gridWidth: CGFloat = 600
     @State private var sortOrder = [KeyPathComparator(\FileItem.name)]
-    @State private var itemToDelete: FileItem?
+    @State private var itemsToDelete: [FileItem] = []
     @State private var infoItem: FileItem?
     @State private var previewURL: URL?
     @State private var selectionRectStart: CGPoint? = nil
@@ -223,23 +223,23 @@ struct FileListView: View {
         .confirmationDialog(
             "Excluir Permanentemente",
             isPresented: Binding(
-                get: { itemToDelete != nil },
-                set: { if !$0 { itemToDelete = nil } }
+                get: { !itemsToDelete.isEmpty },
+                set: { if !$0 { itemsToDelete = [] } }
             ),
             titleVisibility: .visible
         ) {
             Button("Excluir", role: .destructive) {
-                if let item = itemToDelete {
-                    fileManager.permanentDeleteItem(item)
-                }
-                itemToDelete = nil
+                fileManager.permanentDeleteItems(itemsToDelete)
+                itemsToDelete = []
             }
             Button("Cancelar", role: .cancel) {
-                itemToDelete = nil
+                itemsToDelete = []
             }
         } message: {
-            if let item = itemToDelete {
+            if itemsToDelete.count == 1, let item = itemsToDelete.first {
                 Text("'\(item.name)' será apagado definitivamente. Esta ação não pode ser desfeita.")
+            } else {
+                Text("\(itemsToDelete.count) itens serão apagados definitivamente. Esta ação não pode ser desfeita.")
             }
         }
         .quickLookPreview($previewURL)
@@ -548,10 +548,14 @@ struct FileListView: View {
                     Label("Etiquetas", systemImage: "tag")
                 }
                 Divider()
-                Button(action: { fileManager.deleteItem(item) }) {
+                Button(action: {
+                    fileManager.deleteItems(contextItems(for: item))
+                }) {
                     Label("Mover para Lixeira", systemImage: "trash")
                 }
-                Button(role: .destructive, action: { itemToDelete = item }) {
+                Button(role: .destructive, action: {
+                    itemsToDelete = contextItems(for: item)
+                }) {
                     Label("Excluir Permanentemente", systemImage: "xmark.bin")
                 }
             }
@@ -750,10 +754,14 @@ struct FileListView: View {
                                     Label("Etiquetas", systemImage: "tag")
                                 }
                                 Divider()
-                                Button(action: { fileManager.deleteItem(item) }) {
+                                Button(action: {
+                                    fileManager.deleteItems(contextItems(for: item))
+                                }) {
                                     Label("Mover para Lixeira", systemImage: "trash")
                                 }
-                                Button(role: .destructive, action: { itemToDelete = item }) {
+                                Button(role: .destructive, action: {
+                                    itemsToDelete = contextItems(for: item)
+                                }) {
                                     Label("Excluir Permanentemente", systemImage: "xmark.bin")
                                 }
                             }
@@ -866,6 +874,14 @@ struct FileListView: View {
         }
 
         selectedFileIDs = newSelection
+    }
+
+    private func contextItems(for item: FileItem) -> [FileItem] {
+        if selectedFileIDs.contains(item.id) {
+            return sortedFiles.filter { selectedFileIDs.contains($0.id) }
+        }
+
+        return [item]
     }
 }
 
