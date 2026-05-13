@@ -57,6 +57,24 @@ xattr -cr /Applications/Thunar.app
 
 Depois é só abrir normalmente.
 
+## Acesso à Lixeira e pastas protegidas
+
+Para acessar a Lixeira ou outras pastas protegidas pelo macOS, conceda **Acesso Total ao Disco** ao `Thunar` em:
+
+```
+Ajustes do Sistema > Privacidade e Segurança > Acesso Total ao Disco
+```
+
+Se o acesso continuar negado mesmo depois de ativar a permissão, feche o app, remova o `Thunar` da lista, adicione novamente o app instalado em `/Applications` e abra o app de novo.
+
+Em alguns casos, pode ser necessário resetar a permissão do macOS com:
+
+```
+tccutil reset SystemPolicyAllFiles com.example.thunar
+```
+
+Depois do reset, adicione o `Thunar` novamente em **Acesso Total ao Disco**.
+
 ## Atalhos de teclado
 
 | Atalho | Ação |
