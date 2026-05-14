@@ -9,7 +9,8 @@ import Foundation
 
 struct AppConfig {
     /// The visible name of the application.
-    static let appName = "Thunar"
+    // static let appName = "Thunar"
+    static let appName = "Thunder"
     
     /// Description shown in the "About" window.
     static let appDescription = "Inspirado no Thunar do XFCE, sem qualquer vínculo com o projeto original."

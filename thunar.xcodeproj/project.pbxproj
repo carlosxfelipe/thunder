@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		07E3F98C2FAFC440000811F7 /* Thunar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Thunar.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		07E3F98C2FAFC440000811F7 /* Thunder.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Thunder.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -40,7 +40,7 @@
 		07E3F98D2FAFC440000811F7 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				07E3F98C2FAFC440000811F7 /* Thunar.app */,
+				07E3F98C2FAFC440000811F7 /* Thunder.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -67,7 +67,7 @@
 			packageProductDependencies = (
 			);
 			productName = thunar;
-			productReference = 07E3F98C2FAFC440000811F7 /* Thunar.app */;
+			productReference = 07E3F98C2FAFC440000811F7 /* Thunder.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -264,8 +264,8 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Thunar;
-				INFOPLIST_KEY_CFBundleName = Thunar;
+				INFOPLIST_KEY_CFBundleDisplayName = Thunder;
+				INFOPLIST_KEY_CFBundleName = Thunder;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -273,7 +273,7 @@
 				);
 				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.thunar;
-				PRODUCT_NAME = Thunar;
+				PRODUCT_NAME = Thunder;
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -298,8 +298,8 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Thunar;
-				INFOPLIST_KEY_CFBundleName = Thunar;
+				INFOPLIST_KEY_CFBundleDisplayName = Thunder;
+				INFOPLIST_KEY_CFBundleName = Thunder;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -307,7 +307,7 @@
 				);
 				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.thunar;
-				PRODUCT_NAME = Thunar;
+				PRODUCT_NAME = Thunder;
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;

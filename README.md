@@ -1,6 +1,10 @@
-# Thunar
+# Thunder
 
 Gerenciador de arquivos para macOS escrito em Swift com SwiftUI.
+
+> **Nota:** este projeto iniciou como um repositório privado com o nome **Thunar** usado provisoriamente durante o desenvolvimento inicial.
+>
+> Inspirado no Thunar do XFCE, sem qualquer vínculo com o projeto original.
 
 ## Funcionalidades
 
@@ -35,13 +39,13 @@ Para gerar um instalador no estilo "arraste para a pasta Aplicativos":
 ./scripts/build-dmg.sh
 ```
 
-O arquivo `Thunar.dmg` será criado na raiz do projeto.
+O arquivo `Thunder.dmg` será criado na raiz do projeto.
 
-> **Aviso de Gatekeeper**: como o app não é assinado com Apple Developer ID, ao abrir pela primeira vez o macOS pode exibir *"Thunar não pôde ser aberto porque o desenvolvedor não pode ser verificado"* ou *"Thunar está danificado"*. Para contornar, escolha uma das opções abaixo.
+> **Aviso de Gatekeeper**: como o app não é assinado com Apple Developer ID, ao abrir pela primeira vez o macOS pode exibir *"Thunder não pôde ser aberto porque o desenvolvedor não pode ser verificado"* ou *"Thunder está danificado"*. Para contornar, escolha uma das opções abaixo.
 
 ### Opção A — Botão direito (recomendado)
 
-1. Arraste o `Thunar.app` para `/Aplicativos`.
+1. Arraste o `Thunder.app` para `/Aplicativos`.
 2. Clique com o **botão direito** sobre o app → **Abrir**.
 3. No diálogo, clique em **Abrir** novamente.
 
@@ -52,20 +56,20 @@ A partir daí o macOS lembra a permissão.
 Se aparecer "está danificado", rode:
 
 ```
-xattr -cr /Applications/Thunar.app
+xattr -cr /Applications/Thunder.app
 ```
 
 Depois é só abrir normalmente.
 
 ## Acesso à Lixeira e pastas protegidas
 
-Para acessar a Lixeira ou outras pastas protegidas pelo macOS, conceda **Acesso Total ao Disco** ao `Thunar` em:
+Para acessar a Lixeira ou outras pastas protegidas pelo macOS, conceda **Acesso Total ao Disco** ao `Thunder` em:
 
 ```
 Ajustes do Sistema > Privacidade e Segurança > Acesso Total ao Disco
 ```
 
-Se o acesso continuar negado mesmo depois de ativar a permissão, feche o app, remova o `Thunar` da lista, adicione novamente o app instalado em `/Applications` e abra o app de novo.
+Se o acesso continuar negado mesmo depois de ativar a permissão, feche o app, remova o `Thunder` da lista, adicione novamente o app instalado em `/Applications` e abra o app de novo.
 
 Em alguns casos, pode ser necessário resetar a permissão do macOS com:
 
@@ -73,7 +77,7 @@ Em alguns casos, pode ser necessário resetar a permissão do macOS com:
 tccutil reset SystemPolicyAllFiles com.example.thunar
 ```
 
-Depois do reset, adicione o `Thunar` novamente em **Acesso Total ao Disco**.
+Depois do reset, adicione o `Thunder` novamente em **Acesso Total ao Disco**.
 
 ## Atalhos de teclado
 
