@@ -10,6 +10,7 @@ import SwiftUI
 enum SidebarSelection: Hashable {
     case place(SidebarItem)
     case volume(URL)
+    case favorite(URL)
 }
 
 struct SidebarView: View {
@@ -20,6 +21,7 @@ struct SidebarView: View {
     @AppStorage("hiddenSidebarItems") private var hiddenSidebarItems: String = ""
     @AppStorage("showVolumes") private var showVolumes: Bool = true
     @AppStorage("showTags") private var showTags: Bool = true
+    @AppStorage("showFavorites") private var showFavorites: Bool = true
 
     private var hiddenItemsSet: Set<String> {
         Set(hiddenSidebarItems.split(separator: ",").map(String.init))
@@ -40,6 +42,25 @@ struct SidebarView: View {
                             fileManager.navigateTo(item.url)
                         }
                         .tag(SidebarSelection.place(item))
+                }
+            }
+
+            if showFavorites && !fileManager.favorites.isEmpty {
+                Section("Favoritos") {
+                    ForEach(fileManager.favorites, id: \.self) { url in
+                        FavoriteRow(url: url)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                selection = .favorite(url)
+                                fileManager.navigateTo(url)
+                            }
+                            .tag(SidebarSelection.favorite(url))
+                            .contextMenu {
+                                Button("Remover dos Favoritos") {
+                                    fileManager.removeFromFavorites(url)
+                                }
+                            }
+                    }
                 }
             }
 
@@ -109,6 +130,9 @@ struct SidebarView: View {
             case let .volume(url):
                 if fileManager.searchTag != nil { fileManager.searchTag = nil }
                 fileManager.navigateTo(url)
+            case let .favorite(url):
+                if fileManager.searchTag != nil { fileManager.searchTag = nil }
+                fileManager.navigateTo(url)
             case .none:
                 break
             }
@@ -123,6 +147,15 @@ struct SidebarRow: View {
 
     var body: some View {
         Label(item.rawValue, systemImage: item.icon)
+            .font(.system(size: 13))
+    }
+}
+
+struct FavoriteRow: View {
+    let url: URL
+
+    var body: some View {
+        Label(url.lastPathComponent, systemImage: "folder.fill")
             .font(.system(size: 13))
     }
 }

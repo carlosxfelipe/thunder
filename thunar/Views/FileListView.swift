@@ -487,6 +487,16 @@ struct FileListView: View {
                     Button(action: { fileManager.openInTerminal(url: item.url) }) {
                         Label("Abrir no Terminal", systemImage: "terminal")
                     }
+                    if fileManager.isFavorite(item.url) {
+                        Button(action: { fileManager.removeFromFavorites(item.url) }) {
+                            Label("Remover dos Favoritos", systemImage: "star.slash")
+                        }
+                    } else {
+                        Button(action: { fileManager.addToFavorites(item.url) }) {
+                            Label("Adicionar aos Favoritos", systemImage: "star")
+                        }
+                    }
+                    Divider()
                 }
                 Button(action: {
                     let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
@@ -681,6 +691,16 @@ struct FileListView: View {
                                     Button(action: { fileManager.openInTerminal(url: item.url) }) {
                                         Label("Abrir no Terminal", systemImage: "terminal")
                                     }
+                                    if fileManager.isFavorite(item.url) {
+                                        Button(action: { fileManager.removeFromFavorites(item.url) }) {
+                                            Label("Remover dos Favoritos", systemImage: "star.slash")
+                                        }
+                                    } else {
+                                        Button(action: { fileManager.addToFavorites(item.url) }) {
+                                            Label("Adicionar aos Favoritos", systemImage: "star")
+                                        }
+                                    }
+                                    Divider()
                                 }
                                 Button(action: {
                                     let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]

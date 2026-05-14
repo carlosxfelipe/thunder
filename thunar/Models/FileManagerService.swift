@@ -16,6 +16,8 @@ class FileManagerService: ObservableObject {
     @Published var selectedFiles: Set<FileItem> = []
     @Published var navigationHistory: [URL] = []
     @Published var historyIndex: Int = 0
+    @Published var favorites: [URL] = []
+    private let favoritesKey = "sidebarFavorites"
     private let clipboardService = ClipboardService.shared
 
     var clipboard: (urls: [URL], action: ClipboardService.ClipboardAction)? {
@@ -57,6 +59,7 @@ class FileManagerService: ObservableObject {
         navigationHistory.append(home)
         historyIndex = 0
         loadDirectory()
+        loadFavorites()
         registerVolumeObservers()
     }
 
@@ -690,5 +693,45 @@ class FileManagerService: ObservableObject {
         loadDirectory()
         let count = items.count
         postStatus(count == 1 ? "Etiquetas removidas de \"\(items[0].name)\"" : "Etiquetas removidas de \(count) itens")
+    }
+
+    // MARK: - Favorites
+
+    private func loadFavorites() {
+        if let data = UserDefaults.standard.data(forKey: favoritesKey),
+           let urls = try? JSONDecoder().decode([URL].self, from: data)
+        {
+            favorites = urls
+        } else {
+            // Start empty as requested
+            favorites = []
+            saveFavorites()
+        }
+    }
+
+    private func saveFavorites() {
+        if let data = try? JSONEncoder().encode(favorites) {
+            UserDefaults.standard.set(data, forKey: favoritesKey)
+        }
+    }
+
+    func addToFavorites(_ url: URL) {
+        if !favorites.contains(url) {
+            favorites.append(url)
+            saveFavorites()
+            postStatus("\"\(url.lastPathComponent)\" adicionado aos Favoritos")
+        }
+    }
+
+    func removeFromFavorites(_ url: URL) {
+        if let index = favorites.firstIndex(of: url) {
+            favorites.remove(at: index)
+            saveFavorites()
+            postStatus("\"\(url.lastPathComponent)\" removido dos Favoritos")
+        }
+    }
+
+    func isFavorite(_ url: URL) -> Bool {
+        favorites.contains(url)
     }
 }

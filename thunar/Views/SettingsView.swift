@@ -11,6 +11,7 @@ struct SettingsView: View {
     @AppStorage("hiddenSidebarItems") private var hiddenSidebarItems: String = ""
     @AppStorage("showVolumes") private var showVolumes: Bool = true
     @AppStorage("showTags") private var showTags: Bool = true
+    @AppStorage("showFavorites") private var showFavorites: Bool = true
 
     private var hiddenItemsSet: Set<String> {
         Set(hiddenSidebarItems.split(separator: ",").map(String.init))
@@ -49,6 +50,7 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Toggle("Favoritos", isOn: $showFavorites)
                     Toggle("Dispositivos", isOn: $showVolumes)
                     Toggle("Etiquetas", isOn: $showTags)
                 } header: {
