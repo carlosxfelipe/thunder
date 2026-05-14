@@ -1108,8 +1108,13 @@ struct FileIconView: View {
         guard !item.isDirectory else { return }
 
         let ext = item.url.pathExtension.lowercased()
-        let supportedExtensions = ["png", "jpg", "jpeg", "gif", "heic", "webp", "pdf", "mp4", "mov"]
+        let supportedExtensions = ["png", "jpg", "jpeg", "gif", "heic", "webp", "svg", "pdf", "mp4", "mov"]
         guard supportedExtensions.contains(ext) else { return }
+
+        if ext == "svg", let nsImage = NSImage(contentsOf: item.url) {
+            thumbnail = nsImage
+            return
+        }
 
         let request = QLThumbnailGenerator.Request(
             fileAt: item.url,
@@ -1120,6 +1125,10 @@ struct FileIconView: View {
 
         QLThumbnailGenerator.shared.generateBestRepresentation(for: request) { rep, _ in
             if let nsImage = rep?.nsImage {
+                DispatchQueue.main.async {
+                    self.thumbnail = nsImage
+                }
+            } else if ext == "svg", let nsImage = NSImage(contentsOf: item.url) {
                 DispatchQueue.main.async {
                     self.thumbnail = nsImage
                 }
