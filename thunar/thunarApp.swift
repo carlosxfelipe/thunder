@@ -21,6 +21,10 @@ struct thunarApp: App {
                 }
             }
         }
+
+        Settings {
+            SettingsView()
+        }
     }
 
     private func showAboutPanel() {

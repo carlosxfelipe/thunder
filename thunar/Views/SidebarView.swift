@@ -17,10 +17,22 @@ struct SidebarView: View {
     @StateObject private var volumesService = VolumesService()
     @State private var selection: SidebarSelection?
 
+    @AppStorage("hiddenSidebarItems") private var hiddenSidebarItems: String = ""
+    @AppStorage("showVolumes") private var showVolumes: Bool = true
+    @AppStorage("showTags") private var showTags: Bool = true
+
+    private var hiddenItemsSet: Set<String> {
+        Set(hiddenSidebarItems.split(separator: ",").map(String.init))
+    }
+
+    private func isVisible(_ item: SidebarItem) -> Bool {
+        !hiddenItemsSet.contains(item.id)
+    }
+
     var body: some View {
         List(selection: $selection) {
             Section("Locais") {
-                ForEach(SidebarItem.allCases) { item in
+                ForEach(SidebarItem.allCases.filter(isVisible)) { item in
                     SidebarRow(item: item)
                         .contentShape(Rectangle())
                         .onTapGesture {
@@ -31,7 +43,7 @@ struct SidebarView: View {
                 }
             }
 
-            if !volumesService.volumes.isEmpty {
+            if showVolumes && !volumesService.volumes.isEmpty {
                 Section("Dispositivos") {
                     ForEach(volumesService.volumes) { volume in
                         VolumeRow(volume: volume) {
@@ -59,31 +71,33 @@ struct SidebarView: View {
                 }
             }
 
-            Section("Etiquetas") {
-                ForEach(FinderTag.allCases) { tag in
-                    Button(action: {
-                        selection = nil
-                        if fileManager.searchTag == tag {
-                            fileManager.searchTag = nil
-                        } else {
-                            fileManager.searchTag = tag
-                        }
-                    }) {
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(tag.color)
-                                .frame(width: 12, height: 12)
-                            Text(tag.rawValue)
-                                .font(.system(size: 13))
-                            Spacer()
+            if showTags {
+                Section("Etiquetas") {
+                    ForEach(FinderTag.allCases) { tag in
+                        Button(action: {
+                            selection = nil
                             if fileManager.searchTag == tag {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 10, weight: .bold))
-                                    .foregroundColor(.accentColor)
+                                fileManager.searchTag = nil
+                            } else {
+                                fileManager.searchTag = tag
+                            }
+                        }) {
+                            HStack(spacing: 8) {
+                                Circle()
+                                    .fill(tag.color)
+                                    .frame(width: 12, height: 12)
+                                Text(tag.rawValue)
+                                    .font(.system(size: 13))
+                                Spacer()
+                                if fileManager.searchTag == tag {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundColor(.accentColor)
+                                }
                             }
                         }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }
