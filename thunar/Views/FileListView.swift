@@ -6,6 +6,7 @@
 //
 
 import AppKit
+import ImageIO
 import QuickLook
 import QuickLookThumbnailing
 import SwiftUI
@@ -959,6 +960,7 @@ struct ItemInfoSheet: View {
     @State private var totalSize: Int64?
     @State private var itemCount: Int?
     @State private var isCalculatingSize = false
+    @State private var imageDimensions: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -981,6 +983,9 @@ struct ItemInfoSheet: View {
                 InfoRow(label: "Criado", value: formattedDate(item.creationDate))
                 InfoRow(label: "Modificado", value: formattedDate(item.modificationDate))
                 InfoRow(label: "Tamanho", value: sizeText)
+                if let imageDimensions {
+                    InfoRow(label: "Dimensões", value: imageDimensions)
+                }
                 if let itemCount {
                     InfoRow(label: "Itens", value: "\(itemCount)")
                 }
@@ -1041,6 +1046,18 @@ struct ItemInfoSheet: View {
         if !item.isDirectory {
             totalSize = item.fileSize
             itemCount = nil
+
+            let ext = item.url.pathExtension.lowercased()
+            let imageExtensions = ["png", "jpg", "jpeg", "gif", "heic", "webp", "svg", "bmp", "tiff", "tif"]
+            if imageExtensions.contains(ext), let source = CGImageSourceCreateWithURL(item.url as CFURL, nil) {
+                if let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any] {
+                    let width = properties[kCGImagePropertyPixelWidth as String] as? Int ?? 0
+                    let height = properties[kCGImagePropertyPixelHeight as String] as? Int ?? 0
+                    if width > 0 && height > 0 {
+                        imageDimensions = "\(width) x \(height)"
+                    }
+                }
+            }
             return
         }
 

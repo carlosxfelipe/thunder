@@ -32,7 +32,7 @@ struct MountedVolume: Identifiable, Hashable {
     }
 
     /// Indicates if the volume can be ejected.
-    /// External drives sometimes report isEjectable=false, but non-internal volumes 
+    /// External drives sometimes report isEjectable=false, but non-internal volumes
     /// should generally be ejectable (matching Finder behavior).
     var canEject: Bool {
         if isEjectable || isRemovable { return true }

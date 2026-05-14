@@ -220,7 +220,7 @@ class FileManagerService: ObservableObject {
                 }
 
                 var items: [FileItem] = []
-                for case let url as URL in enumerator {
+                while let url = enumerator.nextObject() as? URL {
                     if Task.isCancelled {
                         return [FileItem]()
                     }
