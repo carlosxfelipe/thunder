@@ -405,6 +405,16 @@ class FileManagerService: ObservableObject {
         }
     }
 
+    func openItem(_ item: FileItem) {
+        if item.isDirectory {
+            navigateTo(item.url)
+        } else if item.url.pathExtension.lowercased() == "zip" {
+            extractZipItem(item)
+        } else {
+            NSWorkspace.shared.open(item.url)
+        }
+    }
+
     func compressItem(_ item: FileItem) {
         let currentDir = currentDirectory
         isProcessing = true
@@ -438,6 +448,55 @@ class FileManagerService: ObservableObject {
                 await MainActor.run {
                     self.isProcessing = false
                     self.errorMessage = "Erro ao comprimir: \(error.localizedDescription)"
+                    self.statusMessage = nil
+                }
+            }
+        }
+    }
+
+    func extractZipItem(_ item: FileItem) {
+        let currentDir = currentDirectory
+        isProcessing = true
+        postStatus("Descompactando \"\(item.name)\"...", autoClear: false)
+
+        Task.detached {
+            let baseName = item.url.deletingPathExtension().lastPathComponent
+            var destinationURL = currentDir.appendingPathComponent(baseName, isDirectory: true)
+            var counter = 2
+
+            while FileManager.default.fileExists(atPath: destinationURL.path) {
+                destinationURL = currentDir.appendingPathComponent("\(baseName) \(counter)", isDirectory: true)
+                counter += 1
+            }
+
+            do {
+                try FileManager.default.createDirectory(at: destinationURL, withIntermediateDirectories: false)
+
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
+                process.arguments = ["-x", "-k", item.url.path, destinationURL.path]
+                try process.run()
+                process.waitUntilExit()
+
+                if process.terminationStatus == 0 {
+                    await MainActor.run {
+                        self.isProcessing = false
+                        self.loadDirectory()
+                        self.postStatus("\"\(item.name)\" descompactado com sucesso")
+                    }
+                } else {
+                    try? FileManager.default.removeItem(at: destinationURL)
+                    await MainActor.run {
+                        self.isProcessing = false
+                        self.errorMessage = "Erro ao descompactar \"\(item.name)\"."
+                        self.statusMessage = nil
+                    }
+                }
+            } catch {
+                try? FileManager.default.removeItem(at: destinationURL)
+                await MainActor.run {
+                    self.isProcessing = false
+                    self.errorMessage = "Erro ao descompactar: \(error.localizedDescription)"
                     self.statusMessage = nil
                 }
             }

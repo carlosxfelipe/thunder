@@ -312,11 +312,7 @@ struct FileListView: View {
 
             if keyPress.key == .return, viewMode == .icons {
                 if let currentId = selectedFileIDs.first, let item = sortedFiles.first(where: { $0.id == currentId }) {
-                    if item.isDirectory {
-                        fileManager.navigateTo(item.url)
-                    } else {
-                        NSWorkspace.shared.open(item.url)
-                    }
+                    fileManager.openItem(item)
                     return .handled
                 }
                 return .ignored
@@ -477,11 +473,7 @@ struct FileListView: View {
         .contextMenu(forSelectionType: UUID.self) { items in
             if let id = items.first, let item = fileManager.files.first(where: { $0.id == id }) {
                 Button(action: {
-                    if item.isDirectory {
-                        fileManager.navigateTo(item.url)
-                    } else {
-                        NSWorkspace.shared.open(item.url)
-                    }
+                    fileManager.openItem(item)
                 }) {
                     Label("Abrir", systemImage: "arrow.right.circle")
                 }
@@ -561,11 +553,7 @@ struct FileListView: View {
             }
         } primaryAction: { items in
             if let id = items.first, let item = fileManager.files.first(where: { $0.id == id }) {
-                if item.isDirectory {
-                    fileManager.navigateTo(item.url)
-                } else {
-                    NSWorkspace.shared.open(item.url)
-                }
+                fileManager.openItem(item)
             }
         }
         .contextMenu {
@@ -653,11 +641,7 @@ struct FileListView: View {
                             .background(selectedFileIDs.contains(item.id) ? Color.accentColor.opacity(0.2) : Color.clear)
                             .cornerRadius(8)
                             .onTapGesture(count: 2) {
-                                if item.isDirectory {
-                                    fileManager.navigateTo(item.url)
-                                } else {
-                                    NSWorkspace.shared.open(item.url)
-                                }
+                                fileManager.openItem(item)
                             }
                             .simultaneousGesture(
                                 TapGesture().modifiers(.shift).onEnded {
@@ -683,11 +667,7 @@ struct FileListView: View {
                             .contextMenu {
                                 // ... (context menu items remain same)
                                 Button(action: {
-                                    if item.isDirectory {
-                                        fileManager.navigateTo(item.url)
-                                    } else {
-                                        NSWorkspace.shared.open(item.url)
-                                    }
+                                    fileManager.openItem(item)
                                 }) {
                                     Label("Abrir", systemImage: "arrow.right.circle")
                                 }
