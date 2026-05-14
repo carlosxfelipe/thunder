@@ -79,7 +79,7 @@ class FileManagerService: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            // Extrai a URL antes de entrar no Task — Notification não é Sendable, URL é.
+            // Extract URL before entering Task; URL is Sendable, Notification is not.
             let unmountedURL = (notification.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL)
                 ?? (notification.userInfo?["NSDevicePath"] as? String).map { URL(fileURLWithPath: $0) }
             guard let unmountedURL else { return }
@@ -162,7 +162,7 @@ class FileManagerService: ObservableObject {
                     options: options
                 )
 
-                // Processamento pesado (mapeamento e ordenação) em uma thread separada para não travar a UI
+                // Heavy processing (mapping and sorting) in a separate thread to avoid blocking the UI.
                 let fileItems = await Task.detached {
                     contents.map { FileItem(url: $0) }
                         .sorted { $0.name.lowercased() < $1.name.lowercased() }
@@ -644,8 +644,7 @@ class FileManagerService: ObservableObject {
     }
 
     private func updateSearchResults() {
-        // Guard contra notificações que chegam depois do usuário ter saído da busca por etiqueta
-        // (evita sobrescrever a navegação atual com resultados antigos da query).
+        // Guard against late notifications to avoid overwriting current navigation with old results.
         guard searchTag != nil else { return }
         let results = metadataQuery.results as? [NSMetadataItem] ?? []
         let items = results.compactMap { item -> FileItem? in

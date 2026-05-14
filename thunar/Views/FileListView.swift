@@ -675,7 +675,6 @@ struct FileListView: View {
                                 }
                             )
                             .contextMenu {
-                                // ... (context menu items remain same)
                                 Button(action: {
                                     fileManager.openItem(item)
                                 }) {
@@ -854,7 +853,7 @@ struct FileListView: View {
         let maxY = max(start.y, end.y)
 
         let columnsCount = max(1, Int((gridWidth - 16) / 116))
-        let itemSize: CGFloat = 116 // Estimativa do tamanho do item incluindo padding/spacing
+        let itemSize: CGFloat = 116 // Estimated item size including padding/spacing
 
         var newSelection: Set<UUID> = []
 
