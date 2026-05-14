@@ -12,6 +12,9 @@ enum SidebarItem: String, CaseIterable, Identifiable {
     case home = "Início"
     case desktop = "Área de Trabalho"
     case documents = "Documentos"
+    case movies = "Filmes"
+    case pictures = "Imagens"
+    case music = "Música"
     case downloads = "Downloads"
     case applications = "Aplicativos"
     case trash = "Lixeira"
@@ -23,6 +26,9 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .home: return "house.fill"
         case .desktop: return "desktopcomputer"
         case .documents: return "doc.fill"
+        case .movies: return "film"
+        case .pictures: return "photo.fill"
+        case .music: return "music.note"
         case .downloads: return "arrow.down.circle.fill"
         case .applications: return "app.fill"
         case .trash: return "trash.fill"
@@ -39,6 +45,12 @@ enum SidebarItem: String, CaseIterable, Identifiable {
             return fileManager.urls(for: .desktopDirectory, in: .userDomainMask).first ?? fileManager.homeDirectoryForCurrentUser
         case .documents:
             return fileManager.urls(for: .documentDirectory, in: .userDomainMask).first ?? fileManager.homeDirectoryForCurrentUser
+        case .movies:
+            return fileManager.urls(for: .moviesDirectory, in: .userDomainMask).first ?? fileManager.homeDirectoryForCurrentUser
+        case .pictures:
+            return fileManager.urls(for: .picturesDirectory, in: .userDomainMask).first ?? fileManager.homeDirectoryForCurrentUser
+        case .music:
+            return fileManager.urls(for: .musicDirectory, in: .userDomainMask).first ?? fileManager.homeDirectoryForCurrentUser
         case .downloads:
             return fileManager.urls(for: .downloadsDirectory, in: .userDomainMask).first ?? fileManager.homeDirectoryForCurrentUser
         case .applications:
