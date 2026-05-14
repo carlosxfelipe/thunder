@@ -16,7 +16,7 @@ struct thunarApp: App {
         }
         .commands {
             CommandGroup(replacing: .appInfo) {
-                Button("Sobre o Thunar") {
+                Button("Sobre o \(AppConfig.appName)") {
                     showAboutPanel()
                 }
             }
@@ -43,7 +43,7 @@ struct thunarApp: App {
         credits.append(NSAttributedString(string: "Por Carlos Felipe Araújo\n", attributes: bodyAttrs))
         credits.append(NSAttributedString(string: "github.com/carlosxfelipe\n\n", attributes: linkAttrs))
         credits.append(NSAttributedString(
-            string: "Inspirado no Thunar do XFCE, sem qualquer vínculo com o projeto original.",
+            string: AppConfig.appDescription,
             attributes: bodyAttrs
         ))
 
@@ -54,8 +54,8 @@ struct thunarApp: App {
 
         NSApplication.shared.orderFrontStandardAboutPanel(options: [
             .credits: credits,
-            .applicationName: "Thunar",
-            NSApplication.AboutPanelOptionKey(rawValue: "Copyright"): "© 2026 Carlos Felipe Araújo",
+            .applicationName: AppConfig.appName,
+            NSApplication.AboutPanelOptionKey(rawValue: "Copyright"): AppConfig.copyright,
         ])
     }
 }
