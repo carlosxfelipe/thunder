@@ -175,9 +175,9 @@ class FileManagerService: ObservableObject {
                 self.errorMessage = nil
             } catch {
                 if targetURL.lastPathComponent == ".Trash" || error.localizedDescription.contains("permission") {
-                    self.errorMessage = "Acesso Negado (Proteção do macOS).\n\nPara acessar a Lixeira ou pastas protegidas do sistema, vá em:\nAjustes do Sistema > Privacidade e Segurança > Acesso Total ao Disco\ne conceda permissão para o seu aplicativo (ou para o Xcode/Terminal)."
+                    self.errorMessage = "\(languageManager.local("access_denied_title"))\n\n\(languageManager.local("access_denied_message"))"
                 } else {
-                    self.errorMessage = "Não foi possível acessar a pasta.\nDetalhes: \(error.localizedDescription)"
+                    self.errorMessage = String(format: languageManager.local("access_error_generic"), error.localizedDescription)
                 }
             }
         }
@@ -625,11 +625,12 @@ class FileManagerService: ObservableObject {
         stopTagSearch()
 
         isProcessing = true
-        statusMessage = String(format: languageManager.local("searching_tag"), tag.rawValue)
+        statusMessage = String(format: languageManager.local("searching_tag"), languageManager.local(tag.rawValue))
 
         metadataQuery = NSMetadataQuery()
         metadataQuery.searchScopes = [NSMetadataQueryLocalComputerScope]
-        metadataQuery.predicate = NSPredicate(format: "kMDItemUserTags == %@", tag.rawValue)
+        // Search using the localized Portuguese name for compatibility with standard macOS tags
+        metadataQuery.predicate = NSPredicate(format: "kMDItemUserTags == %@", tag.localizedPortugueseName)
 
         let handler: @Sendable (Notification) -> Void = { [weak self] _ in
             Task { @MainActor [weak self] in
@@ -689,9 +690,9 @@ class FileManagerService: ObservableObject {
         loadDirectory()
         let count = items.count
         if count == 1 {
-            postStatus(String(format: languageManager.local("tag_added_singular"), tag.rawValue, items[0].name))
+            postStatus(String(format: languageManager.local("tag_added_singular"), languageManager.local(tag.rawValue), items[0].name))
         } else {
-            postStatus(String(format: languageManager.local("tag_added_plural"), tag.rawValue, count))
+            postStatus(String(format: languageManager.local("tag_added_plural"), languageManager.local(tag.rawValue), count))
         }
     }
 
@@ -704,9 +705,9 @@ class FileManagerService: ObservableObject {
         loadDirectory()
         let count = items.count
         if count == 1 {
-            postStatus(String(format: languageManager.local("tag_removed_singular"), tag.rawValue, items[0].name))
+            postStatus(String(format: languageManager.local("tag_removed_singular"), languageManager.local(tag.rawValue), items[0].name))
         } else {
-            postStatus(String(format: languageManager.local("tag_removed_plural"), tag.rawValue, count))
+            postStatus(String(format: languageManager.local("tag_removed_plural"), languageManager.local(tag.rawValue), count))
         }
     }
 

@@ -9,15 +9,15 @@ import Foundation
 import SwiftUI
 
 enum SidebarItem: String, CaseIterable, Identifiable {
-    case home = "Início"
-    case desktop = "Área de Trabalho"
-    case documents = "Documentos"
-    case movies = "Filmes"
-    case pictures = "Imagens"
-    case music = "Música"
-    case downloads = "Downloads"
-    case applications = "Aplicativos"
-    case trash = "Lixeira"
+    case home
+    case desktop
+    case documents
+    case movies
+    case pictures
+    case music
+    case downloads
+    case applications
+    case trash
 
     var id: String { rawValue }
 

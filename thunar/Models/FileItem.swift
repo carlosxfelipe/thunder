@@ -30,7 +30,7 @@ struct FileItem: Identifiable, Hashable {
         creationDate = resourceValues?.creationDate ?? Date()
         modificationDate = resourceValues?.contentModificationDate ?? Date()
         tags = (resourceValues?.tagNames ?? []).compactMap { name in
-            FinderTag.allCases.first { $0.rawValue == name }
+            FinderTag.allCases.first { $0.rawValue == name || $0.localizedPortugueseName == name }
         }
     }
 
@@ -54,7 +54,7 @@ struct FileItem: Identifiable, Hashable {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
-        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.locale = Locale.current
         return formatter.string(from: modificationDate)
     }
 }

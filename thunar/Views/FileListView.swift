@@ -216,7 +216,7 @@ struct FileListView: View {
             get: { fileManager.errorMessage != nil },
             set: { if !$0 { fileManager.errorMessage = nil } }
         )) {
-            Button("OK", role: .cancel) {}
+            Button(languageManager.local("ok"), role: .cancel) {}
         } message: {
             if let errorMessage = fileManager.errorMessage {
                 Text(errorMessage)

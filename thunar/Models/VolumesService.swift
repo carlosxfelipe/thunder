@@ -41,13 +41,15 @@ struct MountedVolume: Identifiable, Hashable {
         return false
     }
 
-    var formattedCapacity: String? {
+    func formattedCapacity(using languageManager: LanguageManager) -> String? {
         guard let total = totalCapacity else { return nil }
         let formatter = ByteCountFormatter()
         formatter.allowedUnits = [.useGB, .useMB, .useTB]
         formatter.countStyle = .file
         if let available = availableCapacity {
-            return "\(formatter.string(fromByteCount: available)) livre de \(formatter.string(fromByteCount: total))"
+            return String(format: languageManager.local("free_of"),
+                          formatter.string(fromByteCount: available),
+                          formatter.string(fromByteCount: total))
         }
         return formatter.string(fromByteCount: total)
     }

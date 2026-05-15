@@ -77,7 +77,7 @@ struct SidebarView: View {
                             fileManager.navigateTo(volume.url)
                         }
                         .tag(SidebarSelection.volume(volume.url))
-                        .help(volume.formattedCapacity ?? volume.url.path)
+                        .help(volume.formattedCapacity(using: languageManager) ?? volume.url.path)
                         .contextMenu {
                             Button(languageManager.local("open")) {
                                 fileManager.navigateTo(volume.url)

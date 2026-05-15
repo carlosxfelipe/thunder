@@ -8,13 +8,13 @@
 import SwiftUI
 
 enum FinderTag: String, CaseIterable, Identifiable, Hashable {
-    case red = "Vermelho"
-    case orange = "Laranja"
-    case yellow = "Amarelo"
-    case green = "Verde"
-    case blue = "Azul"
-    case purple = "Roxo"
-    case gray = "Cinza"
+    case red
+    case orange
+    case yellow
+    case green
+    case blue
+    case purple
+    case gray
 
     var id: String { rawValue }
 
@@ -58,6 +58,19 @@ enum FinderTag: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
+    /// The localized name used by macOS Finder in Portuguese.
+    nonisolated var localizedPortugueseName: String {
+        switch self {
+        case .red: return "Vermelho"
+        case .orange: return "Laranja"
+        case .yellow: return "Amarelo"
+        case .green: return "Verde"
+        case .blue: return "Azul"
+        case .purple: return "Roxo"
+        case .gray: return "Cinza"
+        }
+    }
+
     /// Read tags from a file URL using the macOS extended attribute.
     static func tagsForURL(_ url: URL) -> [FinderTag] {
         guard let resourceValues = try? url.resourceValues(forKeys: [.tagNamesKey]),
@@ -67,14 +80,16 @@ enum FinderTag: String, CaseIterable, Identifiable, Hashable {
         }
 
         return tagNames.compactMap { name in
-            FinderTag.allCases.first { $0.rawValue == name }
+            // Match by English key (red) OR Portuguese name (Vermelho)
+            FinderTag.allCases.first { $0.rawValue == name || $0.localizedPortugueseName == name }
         }
     }
 
     /// Set tags on a file URL using the standard macOS API.
     static func setTags(_ tags: [FinderTag], on url: URL) throws {
         var resourceValues = URLResourceValues()
-        resourceValues.tagNames = tags.map { $0.rawValue }
+        // Always write the Portuguese name for compatibility with standard macOS Finder tags in PT-BR
+        resourceValues.tagNames = tags.map { $0.localizedPortugueseName }
         var mutableURL = url
         try mutableURL.setResourceValues(resourceValues)
     }
