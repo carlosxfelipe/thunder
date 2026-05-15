@@ -98,3 +98,10 @@ Depois do reset, adicione o `Thunder` novamente em **Acesso Total ao Disco**.
 | Cmd+Clique | Seleção individual |
 | Cmd+Shift+. | Mostrar/ocultar arquivos ocultos |
 | Letras/Números | Saltar para item pelo nome |
+
+## Licença
+
+Copyright (C) 2026 Carlos Felipe Araújo
+
+Distribuído sob a licença **GNU General Public License v3.0** (GPLv3).
+Consulte o arquivo [`LICENSE`](LICENSE) para mais detalhes.
