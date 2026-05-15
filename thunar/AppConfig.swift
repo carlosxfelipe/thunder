@@ -7,14 +7,11 @@
 
 import Foundation
 
-struct AppConfig {
+enum AppConfig {
     /// The visible name of the application.
     // static let appName = "Thunar"
     static let appName = "Thunder"
-    
-    /// Description shown in the "About" window.
-    static let appDescription = "Inspirado no Thunar do XFCE, sem qualquer vínculo com o projeto original."
-    
+
     /// Application copyright.
     static let copyright = "© 2026 Carlos Felipe Araújo"
 }

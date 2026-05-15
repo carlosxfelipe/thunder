@@ -10,13 +10,15 @@ import SwiftUI
 
 @main
 struct thunarApp: App {
+    @StateObject private var languageManager = LanguageManager.shared
+
     var body: some Scene {
         WindowGroup {
             ContentView()
         }
         .commands {
             CommandGroup(replacing: .appInfo) {
-                Button("Sobre o \(AppConfig.appName)") {
+                Button(languageManager.local("about_thunder")) {
                     showAboutPanel()
                 }
             }
@@ -40,10 +42,11 @@ struct thunarApp: App {
             .link: URL(string: "https://github.com/carlosxfelipe")!,
         ]
 
-        credits.append(NSAttributedString(string: "Por Carlos Felipe Araújo\n", attributes: bodyAttrs))
+        credits.append(NSAttributedString(string: "\(languageManager.local("by")) Carlos Felipe Araújo\n", attributes: bodyAttrs))
         credits.append(NSAttributedString(string: "github.com/carlosxfelipe\n\n", attributes: linkAttrs))
+
         credits.append(NSAttributedString(
-            string: AppConfig.appDescription,
+            string: languageManager.local("app_description"),
             attributes: bodyAttrs
         ))
 

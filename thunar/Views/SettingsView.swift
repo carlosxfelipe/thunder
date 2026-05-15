@@ -13,6 +13,8 @@ struct SettingsView: View {
     @AppStorage("showTags") private var showTags: Bool = true
     @AppStorage("showFavorites") private var showFavorites: Bool = true
 
+    @StateObject private var languageManager = LanguageManager.shared
+
     private var hiddenItemsSet: Set<String> {
         Set(hiddenSidebarItems.split(separator: ",").map(String.init))
     }
@@ -35,26 +37,48 @@ struct SettingsView: View {
         TabView {
             Form {
                 Section {
+                    Picker(selection: $languageManager.currentLanguage) {
+                        ForEach(AppLanguage.allCases) { lang in
+                            Text(lang.displayName).tag(lang)
+                        }
+                    } label: {
+                        Text(languageManager.local("language"))
+                    }
+                    .pickerStyle(.menu)
+                } header: {
+                    Text(languageManager.local("general"))
+                        .font(.body)
+                        .padding(.bottom, 8)
+                }
+            }
+            .formStyle(.grouped)
+            .tabItem {
+                Label(languageManager.local("general"), systemImage: "gearshape")
+            }
+            .frame(width: 450, height: 200)
+
+            Form {
+                Section {
                     ForEach(SidebarItem.allCases) { item in
                         Toggle(isOn: Binding(
                             get: { isVisible(item) },
                             set: { _ in toggleVisibility(item) }
                         )) {
-                            Label(item.rawValue, systemImage: item.icon)
+                            Label(languageManager.local(item.rawValue), systemImage: item.icon)
                         }
                     }
                 } header: {
-                    Text("Mostrar estes itens na barra lateral:")
+                    Text(languageManager.local("show_items_sidebar"))
                         .font(.body)
                         .padding(.bottom, 8)
                 }
 
                 Section {
-                    Toggle("Favoritos", isOn: $showFavorites)
-                    Toggle("Dispositivos", isOn: $showVolumes)
-                    Toggle("Etiquetas", isOn: $showTags)
+                    Toggle(languageManager.local("favorites"), isOn: $showFavorites)
+                    Toggle(languageManager.local("devices"), isOn: $showVolumes)
+                    Toggle(languageManager.local("tags"), isOn: $showTags)
                 } header: {
-                    Text("Seções:")
+                    Text(languageManager.local("sections"))
                         .font(.body)
                         .padding(.top, 16)
                         .padding(.bottom, 8)
@@ -62,7 +86,7 @@ struct SettingsView: View {
             }
             .formStyle(.grouped)
             .tabItem {
-                Label("Barra Lateral", systemImage: "sidebar.left")
+                Label(languageManager.local("sidebar"), systemImage: "sidebar.left")
             }
             .frame(width: 450, height: 550)
         }

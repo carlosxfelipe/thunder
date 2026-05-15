@@ -16,6 +16,7 @@ enum SidebarSelection: Hashable {
 struct SidebarView: View {
     @ObservedObject var fileManager: FileManagerService
     @StateObject private var volumesService = VolumesService()
+    @StateObject private var languageManager = LanguageManager.shared
     @State private var selection: SidebarSelection?
 
     @AppStorage("hiddenSidebarItems") private var hiddenSidebarItems: String = ""
@@ -33,7 +34,7 @@ struct SidebarView: View {
 
     var body: some View {
         List(selection: $selection) {
-            Section("Locais") {
+            Section(languageManager.local("locations")) {
                 ForEach(SidebarItem.allCases.filter(isVisible)) { item in
                     SidebarRow(item: item)
                         .contentShape(Rectangle())
@@ -46,7 +47,7 @@ struct SidebarView: View {
             }
 
             if showFavorites && !fileManager.favorites.isEmpty {
-                Section("Favoritos") {
+                Section(languageManager.local("favorites")) {
                     ForEach(fileManager.favorites, id: \.self) { url in
                         FavoriteRow(url: url)
                             .contentShape(Rectangle())
@@ -56,7 +57,7 @@ struct SidebarView: View {
                             }
                             .tag(SidebarSelection.favorite(url))
                             .contextMenu {
-                                Button("Remover dos Favoritos") {
+                                Button(languageManager.local("remove_favorites")) {
                                     fileManager.removeFromFavorites(url)
                                 }
                             }
@@ -65,9 +66,9 @@ struct SidebarView: View {
             }
 
             if showVolumes && !volumesService.volumes.isEmpty {
-                Section("Dispositivos") {
+                Section(languageManager.local("devices")) {
                     ForEach(volumesService.volumes) { volume in
-                        VolumeRow(volume: volume) {
+                        VolumeRow(volume: volume, languageManager: languageManager) {
                             _ = volumesService.eject(volume)
                         }
                         .contentShape(Rectangle())
@@ -78,12 +79,12 @@ struct SidebarView: View {
                         .tag(SidebarSelection.volume(volume.url))
                         .help(volume.formattedCapacity ?? volume.url.path)
                         .contextMenu {
-                            Button("Abrir") {
+                            Button(languageManager.local("open")) {
                                 fileManager.navigateTo(volume.url)
                             }
                             if volume.canEject {
                                 Divider()
-                                Button("Ejetar") {
+                                Button(languageManager.local("eject")) {
                                     _ = volumesService.eject(volume)
                                 }
                             }
@@ -93,7 +94,7 @@ struct SidebarView: View {
             }
 
             if showTags {
-                Section("Etiquetas") {
+                Section(languageManager.local("tags")) {
                     ForEach(FinderTag.allCases) { tag in
                         Button(action: {
                             selection = nil
@@ -107,7 +108,7 @@ struct SidebarView: View {
                                 Circle()
                                     .fill(tag.color)
                                     .frame(width: 12, height: 12)
-                                Text(tag.rawValue)
+                                Text(languageManager.local(tag.rawValue))
                                     .font(.system(size: 13))
                                 Spacer()
                                 if fileManager.searchTag == tag {
@@ -144,9 +145,10 @@ struct SidebarView: View {
 
 struct SidebarRow: View {
     let item: SidebarItem
+    @ObservedObject var languageManager = LanguageManager.shared
 
     var body: some View {
-        Label(item.rawValue, systemImage: item.icon)
+        Label(languageManager.local(item.rawValue), systemImage: item.icon)
             .font(.system(size: 13))
     }
 }
@@ -162,6 +164,7 @@ struct FavoriteRow: View {
 
 struct VolumeRow: View {
     let volume: MountedVolume
+    let languageManager: LanguageManager
     let onEject: () -> Void
 
     var body: some View {
@@ -177,7 +180,7 @@ struct VolumeRow: View {
                         .onTapGesture {
                             onEject()
                         }
-                        .help("Ejetar \(volume.name)")
+                        .help("\(languageManager.local("eject")) \(volume.name)")
                 }
             }
         } icon: {

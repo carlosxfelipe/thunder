@@ -19,6 +19,7 @@ class FileManagerService: ObservableObject {
     @Published var favorites: [URL] = []
     private let favoritesKey = "sidebarFavorites"
     private let clipboardService = ClipboardService.shared
+    private let languageManager = LanguageManager.shared
 
     var clipboard: (urls: [URL], action: ClipboardService.ClipboardAction)? {
         clipboardService.clipboard
@@ -123,7 +124,7 @@ class FileManagerService: ObservableObject {
         let unmountedPath = unmountedURL.standardizedFileURL.path
         let currentPath = currentDirectory.standardizedFileURL.path
         if currentPath == unmountedPath || currentPath.hasPrefix(unmountedPath + "/") {
-            postStatus("Volume \"\(unmountedURL.lastPathComponent)\" foi desmontado")
+            postStatus(String(format: languageManager.local("volume_unmounted"), unmountedURL.lastPathComponent))
             navigateTo(fileManager.homeDirectoryForCurrentUser)
         }
     }
@@ -143,7 +144,7 @@ class FileManagerService: ObservableObject {
     func loadDirectory(_ url: URL? = nil) {
         fileSearchTask?.cancel()
         fileSearchTask = nil
-        if statusMessage?.hasPrefix("Buscando ") == true {
+        if statusMessage?.hasPrefix(languageManager.local("searching")) == true {
             isProcessing = false
             statusMessage = nil
         }
@@ -188,7 +189,7 @@ class FileManagerService: ObservableObject {
 
         guard !trimmedQuery.isEmpty else {
             fileSearchTask = nil
-            if statusMessage?.hasPrefix("Buscando ") == true {
+            if statusMessage?.hasPrefix(languageManager.local("searching")) == true {
                 isProcessing = false
                 statusMessage = nil
             }
@@ -199,7 +200,7 @@ class FileManagerService: ObservableObject {
         let rootURL = currentDirectory
         let shouldShowHiddenFiles = showHiddenFiles
         isProcessing = true
-        statusMessage = "Buscando \"\(trimmedQuery)\"..."
+        statusMessage = String(format: languageManager.local("searching_query"), trimmedQuery)
 
         fileSearchTask = Task {
             try? await Task.sleep(nanoseconds: 250_000_000)
@@ -238,7 +239,7 @@ class FileManagerService: ObservableObject {
             self.selectedFiles = []
             self.isProcessing = false
             if results.isEmpty {
-                self.postStatus("Nenhum item encontrado para \"\(trimmedQuery)\"")
+                self.postStatus(String(format: languageManager.local("no_items_found_for"), trimmedQuery))
             } else {
                 self.statusMessage = nil
             }
@@ -319,7 +320,7 @@ class FileManagerService: ObservableObject {
         let newFolderURL = currentDirectory.appendingPathComponent(name)
 
         if fileManager.fileExists(atPath: newFolderURL.path) {
-            errorMessage = "Já existe um item com o nome '\(name)' neste local."
+            errorMessage = String(format: languageManager.local("item_exists"), name)
             return
         }
 
@@ -327,7 +328,7 @@ class FileManagerService: ObservableObject {
             try fileManager.createDirectory(at: newFolderURL, withIntermediateDirectories: false)
             loadDirectory()
         } catch {
-            errorMessage = "Erro ao criar pasta: \(error.localizedDescription)"
+            errorMessage = String(format: languageManager.local("create_folder_error"), error.localizedDescription)
         }
     }
 
@@ -335,14 +336,14 @@ class FileManagerService: ObservableObject {
         let newFileURL = currentDirectory.appendingPathComponent(name)
 
         if fileManager.fileExists(atPath: newFileURL.path) {
-            errorMessage = "Já existe um item com o nome '\(name)' neste local."
+            errorMessage = String(format: languageManager.local("item_exists"), name)
             return
         }
 
         if fileManager.createFile(atPath: newFileURL.path, contents: nil) {
             loadDirectory()
         } else {
-            errorMessage = "Não foi possível criar o arquivo."
+            errorMessage = languageManager.local("create_file_error")
         }
     }
 
@@ -350,9 +351,9 @@ class FileManagerService: ObservableObject {
         do {
             try fileManager.trashItem(at: item.url, resultingItemURL: nil)
             loadDirectory()
-            postStatus("\"\(item.name)\" movido para a Lixeira")
+            postStatus(String(format: languageManager.local("moved_to_trash_singular"), item.name))
         } catch {
-            errorMessage = "Erro ao excluir: \(error.localizedDescription)"
+            errorMessage = String(format: languageManager.local("error_deleting_item"), error.localizedDescription)
         }
     }
 
@@ -371,9 +372,9 @@ class FileManagerService: ObservableObject {
 
         loadDirectory()
         if deletedCount == 1, let item = items.first {
-            postStatus("\"\(item.name)\" movido para a Lixeira")
+            postStatus(String(format: languageManager.local("moved_to_trash_singular"), item.name))
         } else if deletedCount > 1 {
-            postStatus("\(deletedCount) itens movidos para a Lixeira")
+            postStatus(String(format: languageManager.local("moved_to_trash_plural"), deletedCount))
         }
     }
 
@@ -381,9 +382,9 @@ class FileManagerService: ObservableObject {
         do {
             try fileManager.removeItem(at: item.url)
             loadDirectory()
-            postStatus("\"\(item.name)\" excluído permanentemente")
+            postStatus(String(format: languageManager.local("deleted_perm_singular"), item.name))
         } catch {
-            errorMessage = "Erro ao excluir: \(error.localizedDescription)"
+            errorMessage = String(format: languageManager.local("error_deleting_item"), error.localizedDescription)
         }
     }
 
@@ -402,9 +403,9 @@ class FileManagerService: ObservableObject {
 
         loadDirectory()
         if deletedCount == 1, let item = items.first {
-            postStatus("\"\(item.name)\" excluído permanentemente")
+            postStatus(String(format: languageManager.local("deleted_perm_singular"), item.name))
         } else if deletedCount > 1 {
-            postStatus("\(deletedCount) itens excluídos permanentemente")
+            postStatus(String(format: languageManager.local("deleted_perm_plural"), deletedCount))
         }
     }
 
@@ -421,7 +422,7 @@ class FileManagerService: ObservableObject {
     func compressItem(_ item: FileItem) {
         let currentDir = currentDirectory
         isProcessing = true
-        postStatus("Comprimindo \"\(item.name)\"...", autoClear: false)
+        postStatus(String(format: languageManager.local("compressing"), item.name), autoClear: false)
 
         Task.detached {
             var zipName = item.name + ".zip"
@@ -445,7 +446,7 @@ class FileManagerService: ObservableObject {
                 await MainActor.run {
                     self.isProcessing = false
                     self.loadDirectory()
-                    self.postStatus("\"\(item.name)\" comprimido com sucesso")
+                    self.postStatus(String(format: self.languageManager.local("compress_success"), item.name))
                 }
             } catch {
                 await MainActor.run {
@@ -460,7 +461,7 @@ class FileManagerService: ObservableObject {
     func extractZipItem(_ item: FileItem) {
         let currentDir = currentDirectory
         isProcessing = true
-        postStatus("Descompactando \"\(item.name)\"...", autoClear: false)
+        postStatus(String(format: languageManager.local("extracting"), item.name), autoClear: false)
 
         Task.detached {
             let baseName = item.url.deletingPathExtension().lastPathComponent
@@ -485,7 +486,7 @@ class FileManagerService: ObservableObject {
                     await MainActor.run {
                         self.isProcessing = false
                         self.loadDirectory()
-                        self.postStatus("\"\(item.name)\" descompactado com sucesso")
+                        self.postStatus(String(format: self.languageManager.local("extract_success"), item.name))
                     }
                 } else {
                     try? FileManager.default.removeItem(at: destinationURL)
@@ -518,7 +519,7 @@ class FileManagerService: ObservableObject {
         do {
             try fileManager.moveItem(at: item.url, to: newURL)
             loadDirectory()
-            postStatus("\"\(item.name)\" renomeado para \"\(newName)\"")
+            postStatus(String(format: languageManager.local("renamed_to"), item.name, newName))
         } catch {
             print("Error renaming item: \(error)")
         }
@@ -527,20 +528,32 @@ class FileManagerService: ObservableObject {
     func copyItems(_ items: [FileItem]) {
         clipboardService.clipboard = (items.map { $0.url }, .copy)
         let count = items.count
-        postStatus(count == 1 ? "\"\(items[0].name)\" copiado" : "\(count) itens copiados")
+        if count == 1 {
+            postStatus(String(format: languageManager.local("copied_singular"), items[0].name))
+        } else {
+            postStatus(String(format: languageManager.local("copied_plural"), count))
+        }
     }
 
     func cutItems(_ items: [FileItem]) {
         clipboardService.clipboard = (items.map { $0.url }, .cut)
         let count = items.count
-        postStatus(count == 1 ? "\"\(items[0].name)\" recortado" : "\(count) itens recortados")
+        if count == 1 {
+            postStatus(String(format: languageManager.local("cut_singular"), items[0].name))
+        } else {
+            postStatus(String(format: languageManager.local("cut_plural"), count))
+        }
     }
 
     func pasteItems() {
         guard let clipboardItem = clipboardService.clipboard else { return }
         let count = clipboardItem.urls.count
-        let actionLabel = clipboardItem.action == .copy ? "Colando" : "Movendo"
-        postStatus(count == 1 ? "\(actionLabel) \"\(clipboardItem.urls[0].lastPathComponent)\"..." : "\(actionLabel) \(count) itens...", autoClear: false)
+        let actionLabel = clipboardItem.action == .copy ? languageManager.local("pasting") : languageManager.local("moving")
+        if count == 1 {
+            postStatus(String(format: languageManager.local("pasting_singular"), actionLabel, clipboardItem.urls[0].lastPathComponent), autoClear: false)
+        } else {
+            postStatus(String(format: languageManager.local("pasting_plural"), actionLabel, count), autoClear: false)
+        }
         isProcessing = true
         var affectedDirectories: Set<URL> = [currentDirectory]
 
@@ -580,8 +593,12 @@ class FileManagerService: ObservableObject {
         isProcessing = false
         loadDirectory()
         postFileSystemChange(for: Array(affectedDirectories))
-        let doneLabel = clipboardItem.action == .copy ? "colado" : "movido"
-        postStatus(count == 1 ? "\"\(clipboardItem.urls[0].lastPathComponent)\" \(doneLabel) com sucesso" : "\(count) itens \(doneLabel)s com sucesso")
+        let doneLabel = clipboardItem.action == .copy ? languageManager.local("pasted") : languageManager.local("moved")
+        if count == 1 {
+            postStatus(String(format: languageManager.local("paste_success_singular"), clipboardItem.urls[0].lastPathComponent, doneLabel))
+        } else {
+            postStatus(String(format: languageManager.local("paste_success_plural"), count, doneLabel))
+        }
     }
 
     func openInTerminal(url: URL? = nil) {
@@ -608,7 +625,7 @@ class FileManagerService: ObservableObject {
         stopTagSearch()
 
         isProcessing = true
-        statusMessage = "Buscando itens com etiqueta \"\(tag.rawValue)\"..."
+        statusMessage = String(format: languageManager.local("searching_tag"), tag.rawValue)
 
         metadataQuery = NSMetadataQuery()
         metadataQuery.searchScopes = [NSMetadataQueryLocalComputerScope]
@@ -655,7 +672,7 @@ class FileManagerService: ObservableObject {
         files = items.sorted { $0.name.lowercased() < $1.name.lowercased() }
         isProcessing = false
         if files.isEmpty {
-            postStatus("Nenhum item encontrado com esta etiqueta")
+            postStatus(languageManager.local("no_tag_results"))
         } else {
             statusMessage = nil
         }
@@ -671,7 +688,11 @@ class FileManagerService: ObservableObject {
         }
         loadDirectory()
         let count = items.count
-        postStatus(count == 1 ? "Etiqueta \"\(tag.rawValue)\" adicionada a \"\(items[0].name)\"" : "Etiqueta \"\(tag.rawValue)\" adicionada a \(count) itens")
+        if count == 1 {
+            postStatus(String(format: languageManager.local("tag_added_singular"), tag.rawValue, items[0].name))
+        } else {
+            postStatus(String(format: languageManager.local("tag_added_plural"), tag.rawValue, count))
+        }
     }
 
     func removeTag(_ tag: FinderTag, from items: [FileItem]) {
@@ -682,7 +703,11 @@ class FileManagerService: ObservableObject {
         }
         loadDirectory()
         let count = items.count
-        postStatus(count == 1 ? "Etiqueta \"\(tag.rawValue)\" removida de \"\(items[0].name)\"" : "Etiqueta \"\(tag.rawValue)\" removida de \(count) itens")
+        if count == 1 {
+            postStatus(String(format: languageManager.local("tag_removed_singular"), tag.rawValue, items[0].name))
+        } else {
+            postStatus(String(format: languageManager.local("tag_removed_plural"), tag.rawValue, count))
+        }
     }
 
     func removeAllTags(from items: [FileItem]) {
@@ -691,7 +716,11 @@ class FileManagerService: ObservableObject {
         }
         loadDirectory()
         let count = items.count
-        postStatus(count == 1 ? "Etiquetas removidas de \"\(items[0].name)\"" : "Etiquetas removidas de \(count) itens")
+        if count == 1 {
+            postStatus(String(format: languageManager.local("all_tags_removed_singular"), items[0].name))
+        } else {
+            postStatus(String(format: languageManager.local("all_tags_removed_plural"), count))
+        }
     }
 
     // MARK: - Favorites
@@ -718,7 +747,7 @@ class FileManagerService: ObservableObject {
         if !favorites.contains(url) {
             favorites.append(url)
             saveFavorites()
-            postStatus("\"\(url.lastPathComponent)\" adicionado aos Favoritos")
+            postStatus(String(format: languageManager.local("added_to_favorites"), url.lastPathComponent))
         }
     }
 
@@ -726,7 +755,7 @@ class FileManagerService: ObservableObject {
         if let index = favorites.firstIndex(of: url) {
             favorites.remove(at: index)
             saveFavorites()
-            postStatus("\"\(url.lastPathComponent)\" removido dos Favoritos")
+            postStatus(String(format: languageManager.local("removed_from_favorites"), url.lastPathComponent))
         }
     }
 

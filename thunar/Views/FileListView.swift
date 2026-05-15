@@ -19,6 +19,7 @@ enum ViewMode: String {
 struct FileListView: View {
     @ObservedObject var fileManager: FileManagerService
     @ObservedObject private var clipboardService = ClipboardService.shared
+    @ObservedObject private var languageManager = LanguageManager.shared
     @AppStorage("viewMode") private var viewMode: ViewMode = .list
     @State private var showingCreateFolder = false
     @State private var showingCreateFile = false
@@ -88,7 +89,7 @@ struct FileListView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(.secondary)
-                    TextField("Buscar", text: $searchText)
+                    TextField(languageManager.local("search_placeholder"), text: $searchText)
                         .textFieldStyle(.plain)
                         .focused($isSearchFocused)
                     if !searchText.isEmpty {
@@ -120,12 +121,12 @@ struct FileListView: View {
                     Image(systemName: "doc.on.clipboard")
                 }
                 .disabled(clipboardService.clipboard == nil)
-                .help("Colar")
+                .help(languageManager.local("paste"))
 
                 Button(action: { fileManager.showHiddenFiles.toggle() }) {
                     Image(systemName: fileManager.showHiddenFiles ? "eye" : "eye.slash")
                 }
-                .help(fileManager.showHiddenFiles ? "Ocultar arquivos ocultos" : "Mostrar arquivos ocultos")
+                .help(fileManager.showHiddenFiles ? languageManager.local("hide_hidden") : languageManager.local("show_hidden"))
 
                 Button(action: { showingCreateFolder = true }) {
                     Image(systemName: "folder.badge.plus")
@@ -143,12 +144,12 @@ struct FileListView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(.secondary)
-                    Text("Resultados em \(fileManager.currentDirectory.path)")
+                    Text("\(languageManager.local("search_results_in")) \(fileManager.currentDirectory.path)")
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                     Spacer()
-                    Text("\(sortedFiles.count) \(sortedFiles.count == 1 ? "item" : "itens")")
+                    Text("\(sortedFiles.count) \(sortedFiles.count == 1 ? languageManager.local("item_count_singular") : languageManager.local("item_count_plural"))")
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                 }
@@ -159,9 +160,9 @@ struct FileListView: View {
 
             if sortedFiles.isEmpty, isSearching, !fileManager.isProcessing {
                 ContentUnavailableView(
-                    "Nenhum item encontrado",
+                    languageManager.local("no_items_found"),
                     systemImage: "magnifyingglass",
-                    description: Text("Tente buscar por outro nome.")
+                    description: Text(languageManager.local("try_searching_again"))
                 )
             } else {
                 if viewMode == .list {
@@ -211,7 +212,7 @@ struct FileListView: View {
                 )
             )
         }
-        .alert("Erro", isPresented: Binding<Bool>(
+        .alert(languageManager.local("error"), isPresented: Binding<Bool>(
             get: { fileManager.errorMessage != nil },
             set: { if !$0 { fileManager.errorMessage = nil } }
         )) {
@@ -222,25 +223,25 @@ struct FileListView: View {
             }
         }
         .confirmationDialog(
-            "Excluir Permanentemente",
+            languageManager.local("confirm_delete"),
             isPresented: Binding(
                 get: { !itemsToDelete.isEmpty },
                 set: { if !$0 { itemsToDelete = [] } }
             ),
             titleVisibility: .visible
         ) {
-            Button("Excluir", role: .destructive) {
+            Button(languageManager.local("delete"), role: .destructive) {
                 fileManager.permanentDeleteItems(itemsToDelete)
                 itemsToDelete = []
             }
-            Button("Cancelar", role: .cancel) {
+            Button(languageManager.local("cancel"), role: .cancel) {
                 itemsToDelete = []
             }
         } message: {
             if itemsToDelete.count == 1, let item = itemsToDelete.first {
-                Text("'\(item.name)' será apagado definitivamente. Esta ação não pode ser desfeita.")
+                Text(String(format: languageManager.local("delete_warning_singular"), item.name))
             } else {
-                Text("\(itemsToDelete.count) itens serão apagados definitivamente. Esta ação não pode ser desfeita.")
+                Text(String(format: languageManager.local("delete_warning_plural"), itemsToDelete.count))
             }
         }
         .quickLookPreview($previewURL)
@@ -427,7 +428,7 @@ struct FileListView: View {
 
     var listView: some View {
         Table(sortedFiles, selection: $selectedFileIDs, sortOrder: $sortOrder) {
-            TableColumn("Nome", value: \.name) { item in
+            TableColumn(languageManager.local("name"), value: \.name) { item in
                 HStack(spacing: 8) {
                     FileIconView(item: item, size: CGSize(width: 16, height: 16))
                         .foregroundColor(.accentColor)
@@ -456,14 +457,14 @@ struct FileListView: View {
                 .width(min: 180, ideal: 260)
             }
 
-            TableColumn("Data", value: \.modificationDate) { item in
+            TableColumn(languageManager.local("date"), value: \.modificationDate) { item in
                 Text(item.formattedDate)
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
             }
             .width(min: 120, max: 150)
 
-            TableColumn("Tamanho", value: \.fileSize) { item in
+            TableColumn(languageManager.local("size"), value: \.fileSize) { item in
                 Text(item.formattedSize)
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
@@ -476,25 +477,25 @@ struct FileListView: View {
                 Button(action: {
                     fileManager.openItem(item)
                 }) {
-                    Label("Abrir", systemImage: "arrow.right.circle")
+                    Label(languageManager.local("open"), systemImage: "arrow.right.circle")
                 }
                 Button(action: { editingItem = item }) {
-                    Label("Renomear", systemImage: "pencil")
+                    Label(languageManager.local("rename"), systemImage: "pencil")
                 }
                 Button(action: { infoItem = item }) {
-                    Label("Obter Informações", systemImage: "info.circle")
+                    Label(languageManager.local("get_info"), systemImage: "info.circle")
                 }
                 if item.isDirectory {
                     Button(action: { fileManager.openInTerminal(url: item.url) }) {
-                        Label("Abrir no Terminal", systemImage: "terminal")
+                        Label(languageManager.local("open_terminal"), systemImage: "terminal")
                     }
                     if fileManager.isFavorite(item.url) {
                         Button(action: { fileManager.removeFromFavorites(item.url) }) {
-                            Label("Remover dos Favoritos", systemImage: "star.slash")
+                            Label(languageManager.local("remove_favorites"), systemImage: "star.slash")
                         }
                     } else {
                         Button(action: { fileManager.addToFavorites(item.url) }) {
-                            Label("Adicionar aos Favoritos", systemImage: "star")
+                            Label(languageManager.local("add_favorites"), systemImage: "star")
                         }
                     }
                     Divider()
@@ -503,17 +504,17 @@ struct FileListView: View {
                     let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
                     fileManager.copyItems(items)
                 }) {
-                    Label("Copiar", systemImage: "doc.on.doc")
+                    Label(languageManager.local("copy"), systemImage: "doc.on.doc")
                 }
                 Button(action: {
                     let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
                     fileManager.cutItems(items)
                 }) {
-                    Label("Recortar", systemImage: "scissors")
+                    Label(languageManager.local("cut"), systemImage: "scissors")
                 }
                 Divider()
                 Button(action: { fileManager.compressItem(item) }) {
-                    Label("Comprimir", systemImage: "archivebox")
+                    Label(languageManager.local("compress"), systemImage: "archivebox")
                 }
                 Divider()
                 Menu {
@@ -530,7 +531,7 @@ struct FileListView: View {
                                 Circle()
                                     .fill(tag.color)
                                     .frame(width: 10, height: 10)
-                                Text(tag.rawValue)
+                                Text(languageManager.local(tag.rawValue))
                                 if item.tags.contains(tag) {
                                     Spacer()
                                     Image(systemName: "checkmark")
@@ -544,22 +545,22 @@ struct FileListView: View {
                             let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
                             fileManager.removeAllTags(from: items)
                         }) {
-                            Label("Remover Todas", systemImage: "xmark")
+                            Label(languageManager.local("remove_all"), systemImage: "xmark")
                         }
                     }
                 } label: {
-                    Label("Etiquetas", systemImage: "tag")
+                    Label(languageManager.local("tags"), systemImage: "tag")
                 }
                 Divider()
                 Button(action: {
                     fileManager.deleteItems(contextItems(for: item))
                 }) {
-                    Label("Mover para Lixeira", systemImage: "trash")
+                    Label(languageManager.local("move_to_trash"), systemImage: "trash")
                 }
                 Button(role: .destructive, action: {
                     itemsToDelete = contextItems(for: item)
                 }) {
-                    Label("Excluir Permanentemente", systemImage: "xmark.bin")
+                    Label(languageManager.local("delete_permanently"), systemImage: "xmark.bin")
                 }
             }
         } primaryAction: { items in
@@ -569,20 +570,20 @@ struct FileListView: View {
         }
         .contextMenu {
             Button(action: { showingCreateFolder = true }) {
-                Label("Nova Pasta", systemImage: "folder.badge.plus")
+                Label(languageManager.local("new_folder"), systemImage: "folder.badge.plus")
             }
             Button(action: { showingCreateFile = true }) {
-                Label("Novo Arquivo", systemImage: "doc.badge.plus")
+                Label(languageManager.local("new_file"), systemImage: "doc.badge.plus")
             }
             Divider()
 
             Button(action: { fileManager.pasteItems() }) {
-                Label("Colar", systemImage: "doc.on.clipboard")
+                Label(languageManager.local("paste"), systemImage: "doc.on.clipboard")
             }
             .disabled(clipboardService.clipboard == nil)
 
             Button(action: { fileManager.openInTerminal() }) {
-                Label("Abrir no Terminal", systemImage: "terminal")
+                Label(languageManager.local("open_terminal"), systemImage: "terminal")
             }
         }
     }
@@ -679,25 +680,25 @@ struct FileListView: View {
                                 Button(action: {
                                     fileManager.openItem(item)
                                 }) {
-                                    Label("Abrir", systemImage: "arrow.right.circle")
+                                    Label(languageManager.local("open"), systemImage: "arrow.right.circle")
                                 }
                                 Button(action: { editingItem = item }) {
-                                    Label("Renomear", systemImage: "pencil")
+                                    Label(languageManager.local("rename"), systemImage: "pencil")
                                 }
                                 Button(action: { infoItem = item }) {
-                                    Label("Obter Informações", systemImage: "info.circle")
+                                    Label(languageManager.local("get_info"), systemImage: "info.circle")
                                 }
                                 if item.isDirectory {
                                     Button(action: { fileManager.openInTerminal(url: item.url) }) {
-                                        Label("Abrir no Terminal", systemImage: "terminal")
+                                        Label(languageManager.local("open_terminal"), systemImage: "terminal")
                                     }
                                     if fileManager.isFavorite(item.url) {
                                         Button(action: { fileManager.removeFromFavorites(item.url) }) {
-                                            Label("Remover dos Favoritos", systemImage: "star.slash")
+                                            Label(languageManager.local("remove_favorites"), systemImage: "star.slash")
                                         }
                                     } else {
                                         Button(action: { fileManager.addToFavorites(item.url) }) {
-                                            Label("Adicionar aos Favoritos", systemImage: "star")
+                                            Label(languageManager.local("add_favorites"), systemImage: "star")
                                         }
                                     }
                                     Divider()
@@ -706,17 +707,17 @@ struct FileListView: View {
                                     let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
                                     fileManager.copyItems(items)
                                 }) {
-                                    Label("Copiar", systemImage: "doc.on.doc")
+                                    Label(languageManager.local("copy"), systemImage: "doc.on.doc")
                                 }
                                 Button(action: {
                                     let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
                                     fileManager.cutItems(items)
                                 }) {
-                                    Label("Recortar", systemImage: "scissors")
+                                    Label(languageManager.local("cut"), systemImage: "scissors")
                                 }
                                 Divider()
                                 Button(action: { fileManager.compressItem(item) }) {
-                                    Label("Comprimir", systemImage: "archivebox")
+                                    Label(languageManager.local("compress"), systemImage: "archivebox")
                                 }
                                 Divider()
                                 Menu {
@@ -733,7 +734,7 @@ struct FileListView: View {
                                                 Circle()
                                                     .fill(tag.color)
                                                     .frame(width: 10, height: 10)
-                                                Text(tag.rawValue)
+                                                Text(languageManager.local(tag.rawValue))
                                                 if item.tags.contains(tag) {
                                                     Spacer()
                                                     Image(systemName: "checkmark")
@@ -747,22 +748,22 @@ struct FileListView: View {
                                             let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
                                             fileManager.removeAllTags(from: items)
                                         }) {
-                                            Label("Remover Todas", systemImage: "xmark")
+                                            Label(languageManager.local("remove_all"), systemImage: "xmark")
                                         }
                                     }
                                 } label: {
-                                    Label("Etiquetas", systemImage: "tag")
+                                    Label(languageManager.local("tags"), systemImage: "tag")
                                 }
                                 Divider()
                                 Button(action: {
                                     fileManager.deleteItems(contextItems(for: item))
                                 }) {
-                                    Label("Mover para Lixeira", systemImage: "trash")
+                                    Label(languageManager.local("move_to_trash"), systemImage: "trash")
                                 }
                                 Button(role: .destructive, action: {
                                     itemsToDelete = contextItems(for: item)
                                 }) {
-                                    Label("Excluir Permanentemente", systemImage: "xmark.bin")
+                                    Label(languageManager.local("delete_permanently"), systemImage: "xmark.bin")
                                 }
                             }
                         }
@@ -794,20 +795,20 @@ struct FileListView: View {
         }
         .contextMenu {
             Button(action: { showingCreateFolder = true }) {
-                Label("Nova Pasta", systemImage: "folder.badge.plus")
+                Label(languageManager.local("new_folder"), systemImage: "folder.badge.plus")
             }
             Button(action: { showingCreateFile = true }) {
-                Label("Novo Arquivo", systemImage: "doc.badge.plus")
+                Label(languageManager.local("new_file"), systemImage: "doc.badge.plus")
             }
             Divider()
 
             Button(action: { fileManager.pasteItems() }) {
-                Label("Colar", systemImage: "doc.on.clipboard")
+                Label(languageManager.local("paste"), systemImage: "doc.on.clipboard")
             }
             .disabled(clipboardService.clipboard == nil)
 
             Button(action: { fileManager.openInTerminal() }) {
-                Label("Abrir no Terminal", systemImage: "terminal")
+                Label(languageManager.local("open_terminal"), systemImage: "terminal")
             }
         }
     }
@@ -889,24 +890,25 @@ struct CreateFolderSheet: View {
     @Binding var isPresented: Bool
     @Binding var folderName: String
     let onCreate: () -> Void
+    @ObservedObject private var languageManager = LanguageManager.shared
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Nova Pasta")
+            Text(languageManager.local("new_folder"))
                 .font(.headline)
 
-            TextField("Nome da pasta", text: $folderName)
+            TextField(languageManager.local("folder_name_placeholder"), text: $folderName)
                 .textFieldStyle(.roundedBorder)
 
             HStack {
-                Button("Cancelar") {
+                Button(languageManager.local("cancel")) {
                     isPresented = false
                 }
                 .keyboardShortcut(.cancelAction)
 
                 Spacer()
 
-                Button("Criar") {
+                Button(languageManager.local("create")) {
                     onCreate()
                     isPresented = false
                 }
@@ -923,24 +925,25 @@ struct CreateFileSheet: View {
     @Binding var isPresented: Bool
     @Binding var fileName: String
     let onCreate: () -> Void
+    @ObservedObject private var languageManager = LanguageManager.shared
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Novo Arquivo")
+            Text(languageManager.local("new_file"))
                 .font(.headline)
 
-            TextField("Nome do arquivo", text: $fileName)
+            TextField(languageManager.local("file_name_placeholder"), text: $fileName)
                 .textFieldStyle(.roundedBorder)
 
             HStack {
-                Button("Cancelar") {
+                Button(languageManager.local("cancel")) {
                     isPresented = false
                 }
                 .keyboardShortcut(.cancelAction)
 
                 Spacer()
 
-                Button("Criar") {
+                Button(languageManager.local("create")) {
                     onCreate()
                     isPresented = false
                 }
@@ -956,6 +959,7 @@ struct CreateFileSheet: View {
 struct ItemInfoSheet: View {
     let item: FileItem
     @Binding var isPresented: Bool
+    @ObservedObject private var languageManager = LanguageManager.shared
 
     @State private var totalSize: Int64?
     @State private var itemCount: Int?
@@ -970,7 +974,7 @@ struct ItemInfoSheet: View {
                     Text(item.name)
                         .font(.headline)
                         .lineLimit(2)
-                    Text(item.isDirectory ? "Pasta" : fileTypeDescription)
+                    Text(item.isDirectory ? languageManager.local("folder") : fileTypeDescription)
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                 }
@@ -979,24 +983,24 @@ struct ItemInfoSheet: View {
             Divider()
 
             VStack(alignment: .leading, spacing: 10) {
-                InfoRow(label: "Local", value: item.url.deletingLastPathComponent().path)
-                InfoRow(label: "Criado", value: formattedDate(item.creationDate))
-                InfoRow(label: "Modificado", value: formattedDate(item.modificationDate))
-                InfoRow(label: "Tamanho", value: sizeText)
+                InfoRow(label: languageManager.local("location"), value: item.url.deletingLastPathComponent().path)
+                InfoRow(label: languageManager.local("created"), value: formattedDate(item.creationDate))
+                InfoRow(label: languageManager.local("modified"), value: formattedDate(item.modificationDate))
+                InfoRow(label: languageManager.local("size"), value: sizeText)
                 if let imageDimensions {
-                    InfoRow(label: "Dimensões", value: imageDimensions)
+                    InfoRow(label: languageManager.local("dimensions"), value: imageDimensions)
                 }
                 if let itemCount {
-                    InfoRow(label: "Itens", value: "\(itemCount)")
+                    InfoRow(label: languageManager.local("tags"), value: "\(itemCount)")
                 }
-                InfoRow(label: "Caminho completo", value: item.url.path)
+                InfoRow(label: languageManager.local("full_path"), value: item.url.path)
             }
 
             Divider()
 
             HStack {
                 Spacer()
-                Button("Fechar") {
+                Button(languageManager.local("close")) {
                     isPresented = false
                 }
                 .keyboardShortcut(.cancelAction)
@@ -1012,14 +1016,14 @@ struct ItemInfoSheet: View {
     private var fileTypeDescription: String {
         let ext = item.url.pathExtension
         if ext.isEmpty {
-            return "Arquivo"
+            return languageManager.local("file")
         }
-        return "Arquivo \(ext.uppercased())"
+        return "\(languageManager.local("file")) \(ext.uppercased())"
     }
 
     private var sizeText: String {
         if isCalculatingSize {
-            return "Calculando..."
+            return languageManager.local("calculating")
         }
         if let totalSize {
             return formattedSize(totalSize)
@@ -1031,7 +1035,7 @@ struct ItemInfoSheet: View {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
-        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.locale = Locale.current
         return formatter.string(from: date)
     }
 
@@ -1178,24 +1182,25 @@ struct RenameSheet: View {
     @Binding var fileName: String
     @Binding var isPresented: Bool
     let onRename: () -> Void
+    @ObservedObject private var languageManager = LanguageManager.shared
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Renomear")
+            Text(languageManager.local("rename"))
                 .font(.headline)
 
-            TextField("Novo nome", text: $fileName)
+            TextField(languageManager.local("new_name_placeholder"), text: $fileName)
                 .textFieldStyle(.roundedBorder)
 
             HStack {
-                Button("Cancelar") {
+                Button(languageManager.local("cancel")) {
                     isPresented = false
                 }
                 .keyboardShortcut(.cancelAction)
 
                 Spacer()
 
-                Button("Renomear") {
+                Button(languageManager.local("rename")) {
                     onRename()
                     isPresented = false
                 }
