@@ -12,6 +12,7 @@ struct SettingsView: View {
     @AppStorage("showVolumes") private var showVolumes: Bool = true
     @AppStorage("showTags") private var showTags: Bool = true
     @AppStorage("showFavorites") private var showFavorites: Bool = true
+    @AppStorage("useLargerFolderIcons") private var useLargerFolderIcons = false
 
     @StateObject private var languageManager = LanguageManager.shared
 
@@ -45,6 +46,8 @@ struct SettingsView: View {
                         Text(languageManager.local("language"))
                     }
                     .pickerStyle(.menu)
+
+                    Toggle(languageManager.local("larger_folder_icons"), isOn: $useLargerFolderIcons)
                 } header: {
                     Text(languageManager.local("general"))
                         .font(.body)
@@ -55,7 +58,7 @@ struct SettingsView: View {
             .tabItem {
                 Label(languageManager.local("general"), systemImage: "gearshape")
             }
-            .frame(width: 450, height: 200)
+            .frame(width: 450, height: 240)
 
             Form {
                 Section {

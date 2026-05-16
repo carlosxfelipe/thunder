@@ -21,6 +21,7 @@ struct FileListView: View {
     @ObservedObject private var clipboardService = ClipboardService.shared
     @ObservedObject private var languageManager = LanguageManager.shared
     @AppStorage("viewMode") private var viewMode: ViewMode = .list
+    @AppStorage("useLargerFolderIcons") private var useLargerFolderIcons = false
     @State private var showingCreateFolder = false
     @State private var showingCreateFile = false
     @State private var newFolderName = ""
@@ -47,6 +48,27 @@ struct FileListView: View {
 
     private var isSearching: Bool {
         !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var iconSize: CGFloat {
+        useLargerFolderIcons ? 68 : 56
+    }
+
+    private var iconGridMinimum: CGFloat {
+        useLargerFolderIcons ? 118 : 100
+    }
+
+    private var iconGridSpacing: CGFloat {
+        16
+    }
+
+    private var iconTextWidth: CGFloat {
+        useLargerFolderIcons ? 118 : 100
+    }
+
+    private var iconColumnsCount: Int {
+        let availableWidth = max(0, gridWidth - 32)
+        return max(1, Int((availableWidth + iconGridSpacing) / (iconGridMinimum + iconGridSpacing)))
     }
 
     private func locationText(for item: FileItem) -> String {
@@ -329,7 +351,7 @@ struct FileListView: View {
                     currentIndex = idx
                 }
 
-                let columnsCount = max(1, Int((gridWidth - 16) / 116))
+                let columnsCount = iconColumnsCount
                 let currentRow = currentIndex / columnsCount
                 let currentCol = currentIndex % columnsCount
                 let lastIndex = currentSortedFiles.count - 1
@@ -616,12 +638,12 @@ struct FileListView: View {
                         )
 
                     LazyVGrid(columns: [
-                        GridItem(.adaptive(minimum: 100), spacing: 16),
-                    ], spacing: 16) {
+                        GridItem(.adaptive(minimum: iconGridMinimum), spacing: iconGridSpacing),
+                    ], spacing: iconGridSpacing) {
                         ForEach(sortedFiles) { item in
                             VStack(spacing: 8) {
                                 ZStack(alignment: .topTrailing) {
-                                    FileIconView(item: item, size: CGSize(width: 56, height: 56))
+                                    FileIconView(item: item, size: CGSize(width: iconSize, height: iconSize))
                                         .foregroundColor(.accentColor)
                                     if !item.tags.isEmpty {
                                         HStack(spacing: 1) {
@@ -638,7 +660,7 @@ struct FileListView: View {
                                     .font(.system(size: 11))
                                     .lineLimit(2)
                                     .multilineTextAlignment(.center)
-                                    .frame(maxWidth: 100)
+                                    .frame(maxWidth: iconTextWidth)
                                 if isSearching {
                                     Text(locationText(for: item))
                                         .font(.system(size: 9))
@@ -646,7 +668,7 @@ struct FileListView: View {
                                         .lineLimit(2)
                                         .multilineTextAlignment(.center)
                                         .truncationMode(.middle)
-                                        .frame(maxWidth: 100)
+                                        .frame(maxWidth: iconTextWidth)
                                 }
                             }
                             .padding(12)
