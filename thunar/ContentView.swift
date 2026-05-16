@@ -33,6 +33,8 @@ struct ContentView: View {
             .background(Color(NSColor.windowBackgroundColor))
         }
         .navigationTitle(windowTitle)
+        // Fixes macOS sidebar/toolbar color mismatch by unifying the background
+        .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         .frame(minWidth: 800, minHeight: 600)
         .background(
             Group {
