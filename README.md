@@ -2,6 +2,8 @@
 
 Gerenciador de arquivos para macOS escrito em Swift com SwiftUI.
 
+![Thunder Screenshot](assets/screenshot.png)
+
 > **Nota:** este projeto iniciou como um repositório privado com o nome **Thunar** usado provisoriamente durante o desenvolvimento inicial.
 >
 > Inspirado no Thunar do XFCE, sem qualquer vínculo com o projeto original.
@@ -15,6 +17,7 @@ Gerenciador de arquivos para macOS escrito em Swift com SwiftUI.
 - Etiquetas coloridas (compatível com Finder)
 - Mostrar/ocultar arquivos ocultos
 - Abrir no Terminal
+- Suporte a múltiplos idiomas (Português e Inglês)
 
 ## Requisitos
 
@@ -74,7 +77,7 @@ Se o acesso continuar negado mesmo depois de ativar a permissão, feche o app, r
 Em alguns casos, pode ser necessário resetar a permissão do macOS com:
 
 ```
-tccutil reset SystemPolicyAllFiles com.example.thunar
+tccutil reset SystemPolicyAllFiles com.example.thunder
 ```
 
 Depois do reset, adicione o `Thunder` novamente em **Acesso Total ao Disco**.
@@ -97,7 +100,19 @@ Depois do reset, adicione o `Thunder` novamente em **Acesso Total ao Disco**.
 | Shift+Clique | Seleção em bloco (modo ícones) |
 | Cmd+Clique | Seleção individual |
 | Cmd+Shift+. | Mostrar/ocultar arquivos ocultos |
+| Cmd+F | Focar no campo de busca |
+| Esc | Limpar busca / Cancelar diálogos |
+| Cmd+, | Abrir Preferências |
 | Letras/Números | Saltar para item pelo nome |
+
+## Idiomas
+
+O Thunder oferece suporte nativo a:
+
+- **Português (Brasil)**
+- **English**
+
+O idioma pode ser alterado nas **Preferências (Cmd+,)**, na aba **Geral**. Por padrão, o aplicativo tenta seguir o idioma definido no sistema macOS.
 
 ## Licença
 
