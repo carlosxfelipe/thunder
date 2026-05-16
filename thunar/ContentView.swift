@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var tabManager = TabManagerService()
+    @StateObject private var languageManager = LanguageManager.shared
 
     var body: some View {
         NavigationSplitView {
@@ -58,7 +59,7 @@ struct ContentView: View {
 
     private var windowTitle: String {
         if let tag = currentFileManager.searchTag {
-            return "Etiqueta: \(tag.rawValue)"
+            return "\(languageManager.local("tag")): \(languageManager.local(tag.rawValue))"
         }
         return currentFileManager.currentDirectory.lastPathComponent
     }
