@@ -11,6 +11,7 @@ import SwiftUI
 enum AppLanguage: String, CaseIterable, Identifiable {
     case ptBR = "pt-BR"
     case en
+    case es
 
     var id: String { rawValue }
 
@@ -18,6 +19,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         switch self {
         case .ptBR: return "Português (Brasil)"
         case .en: return "English"
+        case .es: return "Español"
         }
     }
 }
@@ -26,7 +28,7 @@ class LanguageManager: ObservableObject {
     @Published var currentLanguage: AppLanguage {
         didSet {
             UserDefaults.standard.set(currentLanguage.rawValue, forKey: "appLanguage")
-            // Atualiza a preferência global do sistema para este app
+            // Update global system preference for this app
             UserDefaults.standard.set([currentLanguage.rawValue], forKey: "AppleLanguages")
         }
     }
@@ -172,6 +174,132 @@ enum Translations {
             ],
             "access_error_generic": [.ptBR: "Não foi possível acessar a pasta.\nDetalhes: %@", .en: "Could not access folder.\nDetails: %@"],
         ]
+
+        let spanish: [String: String] = [
+            "settings": "Configuración",
+            "sidebar": "Barra lateral",
+            "general": "General",
+            "language": "Idioma",
+            "about_thunder": "Acerca de Thunder",
+            "favorites": "Favoritos",
+            "devices": "Dispositivos",
+            "tags": "Etiquetas",
+            "show_items_sidebar": "Mostrar estos elementos en la barra lateral:",
+            "sections": "Secciones:",
+            "by": "Por",
+            "locations": "Ubicaciones",
+            "open": "Abrir",
+            "eject": "Expulsar",
+            "remove_favorites": "Eliminar de favoritos",
+            "home": "Inicio",
+            "desktop": "Escritorio",
+            "documents": "Documentos",
+            "movies": "Películas",
+            "pictures": "Imágenes",
+            "music": "Música",
+            "downloads": "Descargas",
+            "applications": "Aplicaciones",
+            "trash": "Papelera",
+            "app_description": "Inspirado en Thunar de XFCE, sin ninguna relación con el proyecto original.",
+            "red": "Rojo",
+            "orange": "Naranja",
+            "yellow": "Amarillo",
+            "green": "Verde",
+            "blue": "Azul",
+            "purple": "Morado",
+            "gray": "Gris",
+            "free_of": "%@ libre de %@",
+            "remove_all": "Eliminar todas",
+            "search_placeholder": "Buscar",
+            "rename": "Renombrar",
+            "get_info": "Obtener información",
+            "open_terminal": "Abrir en Terminal",
+            "add_favorites": "Añadir a favoritos",
+            "copy": "Copiar",
+            "cut": "Cortar",
+            "paste": "Pegar",
+            "compress": "Comprimir",
+            "move_to_trash": "Mover a la papelera",
+            "delete_permanently": "Eliminar permanentemente",
+            "cancel": "Cancelar",
+            "delete": "Eliminar",
+            "new_folder": "Nueva carpeta",
+            "new_file": "Nuevo archivo",
+            "search_results_in": "Resultados en",
+            "no_items_found": "No se encontraron elementos",
+            "try_searching_again": "Intenta buscar otro nombre.",
+            "error": "Error",
+            "hide_hidden": "Ocultar archivos ocultos",
+            "show_hidden": "Mostrar archivos ocultos",
+            "confirm_delete": "Eliminar permanentemente",
+            "delete_warning_singular": "'%@' se eliminará permanentemente. Esta acción no se puede deshacer.",
+            "delete_warning_plural": "%d elementos se eliminarán permanentemente. Esta acción no se puede deshacer.",
+            "name": "Nombre",
+            "date": "Fecha",
+            "size": "Tamaño",
+            "item_count_singular": "elemento",
+            "item_count_plural": "elementos",
+            "searching": "Buscando",
+            "searching_query": "Buscando \"%@\"...",
+            "searching_tag": "Buscando elementos con la etiqueta \"%@\"...",
+            "volume_unmounted": "El volumen \"%@\" fue desmontado",
+            "item_exists": "Ya existe un elemento llamado \"%@\" en esta ubicación.",
+            "create_folder_error": "Error al crear carpeta: %@",
+            "create_file_error": "No se pudo crear el archivo.",
+            "moved_to_trash_singular": "\"%@\" movido a la papelera",
+            "moved_to_trash_plural": "%d elementos movidos a la papelera",
+            "deleted_perm_singular": "\"%@\" eliminado permanentemente",
+            "deleted_perm_plural": "%d elementos eliminados permanentemente",
+            "compressing": "Comprimiendo \"%@\"...",
+            "compress_success": "\"%@\" comprimido correctamente",
+            "extracting": "Extrayendo \"%@\"...",
+            "extract_success": "\"%@\" extraído correctamente",
+            "renamed_to": "\"%@\" renombrado a \"%@\"",
+            "copied_singular": "\"%@\" copiado",
+            "copied_plural": "%d elementos copiados",
+            "cut_singular": "\"%@\" cortado",
+            "cut_plural": "%d elementos cortados",
+            "pasting": "Pegando",
+            "moving": "Moviendo",
+            "pasting_singular": "%@ \"%@\"...",
+            "pasting_plural": "%@ %d elementos...",
+            "paste_success_singular": "\"%@\" %@ correctamente",
+            "paste_success_plural": "%d elementos %@ correctamente",
+            "no_tag_results": "No se encontraron elementos con esta etiqueta",
+            "tag_added_singular": "Etiqueta \"%@\" añadida a \"%@\"",
+            "tag_added_plural": "Etiqueta \"%@\" añadida a %d elementos",
+            "tag_removed_singular": "Etiqueta \"%@\" eliminada de \"%@\"",
+            "tag_removed_plural": "Etiqueta \"%@\" eliminada de %d elementos",
+            "all_tags_removed_singular": "Etiquetas eliminadas de \"%@\"",
+            "all_tags_removed_plural": "Etiquetas eliminadas de %d elementos",
+            "added_to_favorites": "\"%@\" añadido a favoritos",
+            "removed_from_favorites": "\"%@\" eliminado de favoritos",
+            "no_items_found_for": "No se encontraron elementos para \"%@\"",
+            "create": "Crear",
+            "error_deleting_item": "Error al eliminar: %@",
+            "pasted": "pegado",
+            "moved": "movido",
+            "folder_name_placeholder": "Nombre de la carpeta",
+            "file_name_placeholder": "Nombre del archivo",
+            "new_name_placeholder": "Nuevo nombre",
+            "location": "Ubicación",
+            "created": "Creado",
+            "modified": "Modificado",
+            "dimensions": "Dimensiones",
+            "full_path": "Ruta completa",
+            "close": "Cerrar",
+            "folder": "Carpeta",
+            "file": "Archivo",
+            "calculating": "Calculando...",
+            "ok": "OK",
+            "access_denied_title": "Acceso denegado (protección de macOS)",
+            "access_denied_message": "Para acceder a la Papelera o a carpetas protegidas del sistema, ve a:\nAjustes del Sistema > Privacidad y seguridad > Acceso total al disco\ny concede permiso a tu aplicación (o a Xcode/Terminal).",
+            "access_error_generic": "No se pudo acceder a la carpeta.\nDetalles: %@",
+        ]
+
+        if lang == .es {
+            return spanish[key] ?? dict[key]?[.en] ?? key
+        }
 
         return dict[key]?[lang] ?? key
     }
