@@ -5,6 +5,7 @@
 //  Created by Carlos Felipe Araújo on 09/05/26.
 //
 
+import AppKit
 import Combine
 import Foundation
 import SwiftUI
@@ -427,12 +428,44 @@ class FileManagerService: ObservableObject {
         Task.detached {
             var zipName = item.name + ".zip"
             var zipURL = currentDir.appendingPathComponent(zipName)
-            var counter = 2
 
-            while FileManager.default.fileExists(atPath: zipURL.path) {
-                zipName = "\(item.name) \(counter).zip"
-                zipURL = currentDir.appendingPathComponent(zipName)
-                counter += 1
+            if FileManager.default.fileExists(atPath: zipURL.path) {
+                let response = await MainActor.run { [zipName, zipURL] in
+                    let alert = NSAlert()
+                    alert.messageText = self.languageManager.local("item_exists_title")
+                    alert.informativeText = String(format: self.languageManager.local("item_exists_message"), zipName)
+                    alert.icon = NSWorkspace.shared.icon(forFile: zipURL.path)
+                    alert.addButton(withTitle: self.languageManager.local("replace"))
+                    alert.addButton(withTitle: self.languageManager.local("keep_both"))
+                    alert.addButton(withTitle: self.languageManager.local("skip"))
+                    return alert.runModal()
+                }
+
+                if response == .alertFirstButtonReturn {
+                    do {
+                        try FileManager.default.removeItem(at: zipURL)
+                    } catch {
+                        await MainActor.run {
+                            self.isProcessing = false
+                            self.errorMessage = "Erro ao substituir: \(error.localizedDescription)"
+                            self.statusMessage = nil
+                        }
+                        return
+                    }
+                } else if response == .alertSecondButtonReturn {
+                    var counter = 2
+                    while FileManager.default.fileExists(atPath: zipURL.path) {
+                        zipName = "\(item.name) \(counter).zip"
+                        zipURL = currentDir.appendingPathComponent(zipName)
+                        counter += 1
+                    }
+                } else {
+                    await MainActor.run {
+                        self.isProcessing = false
+                        self.statusMessage = nil
+                    }
+                    return
+                }
             }
 
             let process = Process()
@@ -466,11 +499,43 @@ class FileManagerService: ObservableObject {
         Task.detached {
             let baseName = item.url.deletingPathExtension().lastPathComponent
             var destinationURL = currentDir.appendingPathComponent(baseName, isDirectory: true)
-            var counter = 2
 
-            while FileManager.default.fileExists(atPath: destinationURL.path) {
-                destinationURL = currentDir.appendingPathComponent("\(baseName) \(counter)", isDirectory: true)
-                counter += 1
+            if FileManager.default.fileExists(atPath: destinationURL.path) {
+                let response = await MainActor.run { [baseName, destinationURL] in
+                    let alert = NSAlert()
+                    alert.messageText = self.languageManager.local("item_exists_title")
+                    alert.informativeText = String(format: self.languageManager.local("item_exists_message"), baseName)
+                    alert.icon = NSWorkspace.shared.icon(forFile: destinationURL.path)
+                    alert.addButton(withTitle: self.languageManager.local("replace"))
+                    alert.addButton(withTitle: self.languageManager.local("keep_both"))
+                    alert.addButton(withTitle: self.languageManager.local("skip"))
+                    return alert.runModal()
+                }
+
+                if response == .alertFirstButtonReturn {
+                    do {
+                        try FileManager.default.removeItem(at: destinationURL)
+                    } catch {
+                        await MainActor.run {
+                            self.isProcessing = false
+                            self.errorMessage = "Erro ao substituir: \(error.localizedDescription)"
+                            self.statusMessage = nil
+                        }
+                        return
+                    }
+                } else if response == .alertSecondButtonReturn {
+                    var counter = 2
+                    while FileManager.default.fileExists(atPath: destinationURL.path) {
+                        destinationURL = currentDir.appendingPathComponent("\(baseName) \(counter)", isDirectory: true)
+                        counter += 1
+                    }
+                } else {
+                    await MainActor.run {
+                        self.isProcessing = false
+                        self.statusMessage = nil
+                    }
+                    return
+                }
             }
 
             do {
@@ -556,6 +621,8 @@ class FileManagerService: ObservableObject {
         }
         isProcessing = true
         var affectedDirectories: Set<URL> = [currentDirectory]
+        var processedCount = 0
+        var lastProcessedName = ""
 
         for sourceURL in clipboardItem.urls {
             var destinationURL = currentDirectory.appendingPathComponent(sourceURL.lastPathComponent)
@@ -564,15 +631,44 @@ class FileManagerService: ObservableObject {
                 continue
             }
 
+            var skipThisItem = false
             if fileManager.fileExists(atPath: destinationURL.path) {
-                var counter = 2
-                let baseName = sourceURL.deletingPathExtension().lastPathComponent
-                let ext = sourceURL.pathExtension
-                while fileManager.fileExists(atPath: destinationURL.path) {
-                    let newName = ext.isEmpty ? "\(baseName) \(counter)" : "\(baseName) \(counter).\(ext)"
-                    destinationURL = currentDirectory.appendingPathComponent(newName)
-                    counter += 1
+                let alert = NSAlert()
+                alert.messageText = languageManager.local("item_exists_title")
+                alert.informativeText = String(format: languageManager.local("item_exists_message"), sourceURL.lastPathComponent)
+                alert.icon = NSWorkspace.shared.icon(forFile: destinationURL.path)
+                alert.addButton(withTitle: languageManager.local("replace"))
+                alert.addButton(withTitle: languageManager.local("keep_both"))
+                alert.addButton(withTitle: languageManager.local("skip"))
+
+                let response = alert.runModal()
+
+                if response == .alertFirstButtonReturn {
+                    // Replace
+                    do {
+                        try fileManager.removeItem(at: destinationURL)
+                    } catch {
+                        errorMessage = "Erro ao substituir: \(error.localizedDescription)"
+                        skipThisItem = true
+                    }
+                } else if response == .alertSecondButtonReturn {
+                    // Keep both
+                    var counter = 2
+                    let baseName = sourceURL.deletingPathExtension().lastPathComponent
+                    let ext = sourceURL.pathExtension
+                    while fileManager.fileExists(atPath: destinationURL.path) {
+                        let newName = ext.isEmpty ? "\(baseName) \(counter)" : "\(baseName) \(counter).\(ext)"
+                        destinationURL = currentDirectory.appendingPathComponent(newName)
+                        counter += 1
+                    }
+                } else {
+                    // Skip
+                    skipThisItem = true
                 }
+            }
+
+            if skipThisItem {
+                continue
             }
 
             do {
@@ -582,6 +678,8 @@ class FileManagerService: ObservableObject {
                     try fileManager.moveItem(at: sourceURL, to: destinationURL)
                     affectedDirectories.insert(sourceURL.deletingLastPathComponent())
                 }
+                processedCount += 1
+                lastProcessedName = sourceURL.lastPathComponent
             } catch {
                 errorMessage = "Erro ao colar: \(error.localizedDescription)"
             }
@@ -594,10 +692,12 @@ class FileManagerService: ObservableObject {
         loadDirectory()
         postFileSystemChange(for: Array(affectedDirectories))
         let doneLabel = clipboardItem.action == .copy ? languageManager.local("pasted") : languageManager.local("moved")
-        if count == 1 {
-            postStatus(String(format: languageManager.local("paste_success_singular"), clipboardItem.urls[0].lastPathComponent, doneLabel))
+        if processedCount == 1 {
+            postStatus(String(format: languageManager.local("paste_success_singular"), lastProcessedName, doneLabel))
+        } else if processedCount > 1 {
+            postStatus(String(format: languageManager.local("paste_success_plural"), processedCount, doneLabel))
         } else {
-            postStatus(String(format: languageManager.local("paste_success_plural"), count, doneLabel))
+            statusMessage = nil
         }
     }
 

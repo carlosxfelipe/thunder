@@ -175,6 +175,11 @@ enum Translations {
                 .en: "To access the Trash or protected system folders, go to:\nSystem Settings > Privacy & Security > Full Disk Access\nand grant permission to your application (or to Xcode/Terminal).",
             ],
             "access_error_generic": [.ptBR: "Não foi possível acessar a pasta.\nDetalhes: %@", .en: "Could not access folder.\nDetails: %@"],
+            "replace": [.ptBR: "Substituir", .en: "Replace"],
+            "keep_both": [.ptBR: "Manter Ambos", .en: "Keep Both"],
+            "skip": [.ptBR: "Ignorar", .en: "Skip"],
+            "item_exists_title": [.ptBR: "Item já existe", .en: "Item already exists"],
+            "item_exists_message": [.ptBR: "Um item com o nome \"%@\" já existe neste local. O que você deseja fazer?", .en: "An item named \"%@\" already exists in this location. What do you want to do?"],
         ]
 
         let spanish: [String: String] = [
@@ -299,6 +304,11 @@ enum Translations {
             "access_denied_title": "Acceso denegado (protección de macOS)",
             "access_denied_message": "Para acceder a la Papelera o a carpetas protegidas del sistema, ve a:\nAjustes del Sistema > Privacidad y seguridad > Acceso total al disco\ny concede permiso a tu aplicación (o a Xcode/Terminal).",
             "access_error_generic": "No se pudo acceder a la carpeta.\nDetalles: %@",
+            "replace": "Reemplazar",
+            "keep_both": "Mantener ambos",
+            "skip": "Omitir",
+            "item_exists_title": "El elemento ya existe",
+            "item_exists_message": "Ya existe un elemento llamado \"%@\" en esta ubicación. ¿Qué deseas hacer?",
         ]
 
         if lang == .es {
