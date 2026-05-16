@@ -17,7 +17,7 @@ Gerenciador de arquivos para macOS escrito em Swift com SwiftUI.
 - Etiquetas coloridas (compatível com Finder)
 - Mostrar/ocultar arquivos ocultos
 - Abrir no Terminal
-- Suporte a múltiplos idiomas (Português e Inglês)
+- Suporte a múltiplos idiomas (Português, Inglês e Espanhol)
 
 ## Requisitos
 
@@ -111,6 +111,7 @@ O Thunder oferece suporte nativo a:
 
 - **Português (Brasil)**
 - **English**
+- **Español**
 
 O idioma pode ser alterado nas **Preferências (Cmd+,)**, na aba **Geral**. Por padrão, o aplicativo tenta seguir o idioma definido no sistema macOS.
 
