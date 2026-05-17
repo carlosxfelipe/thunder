@@ -195,6 +195,11 @@ enum Translations {
             "percent": [.ptBR: "Porcentagem", .en: "Percent"],
             "edit_dimension": [.ptBR: "Dimensão base", .en: "Base dimension"],
             "save_as_copy": [.ptBR: "Salvar como cópia", .en: "Save as copy"],
+            "name_label": [.ptBR: "Nome", .en: "Name"],
+            "extension_label": [.ptBR: "Extensão", .en: "Extension"],
+            "extension_warning": [.ptBR: "Alterar a extensão pode tornar o arquivo ilegível.", .en: "Changing the extension might make the file unreadable."],
+            "unlock_extension_help": [.ptBR: "Desbloquear extensão para edição", .en: "Unlock extension for editing"],
+            "lock_extension_help": [.ptBR: "Bloquear extensão", .en: "Lock extension"],
         ]
 
         let spanish: [String: String] = [
@@ -339,6 +344,11 @@ enum Translations {
             "percent": "Porcentaje",
             "edit_dimension": "Dimensión base",
             "save_as_copy": "Guardar como copia",
+            "name_label": "Nombre",
+            "extension_label": "Extensión",
+            "extension_warning": "Cambiar la extensión puede hacer que el archivo sea ilegible.",
+            "unlock_extension_help": "Desbloquear extensión para editar",
+            "lock_extension_help": "Bloquear extensión",
         ]
 
         if lang == .es {

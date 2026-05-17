@@ -1292,13 +1292,97 @@ struct RenameSheet: View {
     let onRename: () -> Void
     @ObservedObject private var languageManager = LanguageManager.shared
 
+    @State private var baseName: String = ""
+    @State private var extensionName: String = ""
+    @State private var hasExtension: Bool = false
+    @State private var isExtensionLocked: Bool = true
+
+    enum Field {
+        case baseName
+        case extensionName
+    }
+
+    @FocusState private var focusedField: Field?
+
+    private var isRenameDisabled: Bool {
+        let trimmedBase = baseName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedBase.isEmpty {
+            return true
+        }
+
+        let currentCombined: String
+        if hasExtension {
+            let trimmedExt = extensionName.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmedExt.isEmpty {
+                currentCombined = trimmedBase
+            } else {
+                currentCombined = "\(trimmedBase).\(trimmedExt)"
+            }
+        } else {
+            currentCombined = trimmedBase
+        }
+
+        return currentCombined == item.name
+    }
+
     var body: some View {
         VStack(spacing: 16) {
             Text(languageManager.local("rename"))
                 .font(.headline)
 
-            TextField(languageManager.local("new_name_placeholder"), text: $fileName)
-                .textFieldStyle(.roundedBorder)
+            VStack(alignment: .leading, spacing: 12) {
+                // Name
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(languageManager.local("name_label"))
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.secondary)
+
+                    TextField(languageManager.local("new_name_placeholder"), text: $baseName)
+                        .textFieldStyle(.roundedBorder)
+                        .focused($focusedField, equals: .baseName)
+                }
+
+                // Extension (if applicable)
+                if hasExtension {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(languageManager.local("extension_label"))
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.secondary)
+
+                        HStack(spacing: 8) {
+                            HStack(spacing: 4) {
+                                Text(".")
+                                    .font(.system(size: 13, design: .monospaced))
+                                    .foregroundColor(.secondary)
+
+                                TextField("", text: $extensionName)
+                                    .textFieldStyle(.roundedBorder)
+                                    .font(.system(size: 13, design: .monospaced))
+                                    .disabled(isExtensionLocked)
+                                    .focused($focusedField, equals: .extensionName)
+                            }
+
+                            Button(action: {
+                                isExtensionLocked.toggle()
+                                if !isExtensionLocked {
+                                    focusedField = .extensionName
+                                } else {
+                                    focusedField = .baseName
+                                }
+                            }) {
+                                Image(systemName: isExtensionLocked ? "lock.fill" : "lock.open.fill")
+                                    .foregroundColor(.secondary)
+                                    .font(.system(size: 12))
+                                    .frame(width: 24, height: 24)
+                                    .background(Color.secondary.opacity(0.1))
+                                    .clipShape(Circle())
+                            }
+                            .buttonStyle(.plain)
+                            .help(languageManager.local(isExtensionLocked ? "unlock_extension_help" : "lock_extension_help"))
+                        }
+                    }
+                }
+            }
 
             HStack {
                 Button(languageManager.local("cancel")) {
@@ -1309,15 +1393,44 @@ struct RenameSheet: View {
                 Spacer()
 
                 Button(languageManager.local("rename")) {
+                    if hasExtension {
+                        let finalExtension = extensionName.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if finalExtension.isEmpty {
+                            fileName = baseName
+                        } else {
+                            fileName = "\(baseName).\(finalExtension)"
+                        }
+                    } else {
+                        fileName = baseName
+                    }
                     onRename()
                     isPresented = false
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(fileName.isEmpty || fileName == item.name)
+                .disabled(isRenameDisabled)
             }
         }
         .padding(24)
         .frame(width: 300)
+        .onAppear {
+            initializeNames()
+            focusedField = .baseName
+        }
+    }
+
+    private func initializeNames() {
+        let originalName = item.name
+        if !item.isDirectory, let lastDotIndex = originalName.lastIndex(of: ".") {
+            if lastDotIndex > originalName.startIndex {
+                baseName = String(originalName[..<lastDotIndex])
+                extensionName = String(originalName[originalName.index(after: lastDotIndex)...])
+                hasExtension = true
+                return
+            }
+        }
+        baseName = originalName
+        extensionName = ""
+        hasExtension = false
     }
 }
 
