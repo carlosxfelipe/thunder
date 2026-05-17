@@ -73,6 +73,14 @@ struct FileListView: View {
         useLargerFolderIcons ? 68 : 56
     }
 
+    private var iconTextSize: CGFloat {
+        11 * (iconSize / 56.0)
+    }
+
+    private var iconLocationTextSize: CGFloat {
+        9 * (iconSize / 56.0)
+    }
+
     private var iconGridMinimum: CGFloat {
         useLargerFolderIcons ? 118 : 100
     }
@@ -628,13 +636,13 @@ struct FileListView: View {
                                     }
                                 }
                                 Text(item.name)
-                                    .font(.system(size: 11))
+                                    .font(.system(size: iconTextSize))
                                     .lineLimit(2)
                                     .multilineTextAlignment(.center)
                                     .frame(maxWidth: iconTextWidth)
                                 if isSearching {
                                     Text(locationText(for: item))
-                                        .font(.system(size: 9))
+                                        .font(.system(size: iconLocationTextSize))
                                         .foregroundColor(.secondary)
                                         .lineLimit(2)
                                         .multilineTextAlignment(.center)
