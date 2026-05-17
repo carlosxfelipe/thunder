@@ -180,6 +180,18 @@ enum Translations {
             "skip": [.ptBR: "Ignorar", .en: "Skip"],
             "item_exists_title": [.ptBR: "Item já existe", .en: "Item already exists"],
             "item_exists_message": [.ptBR: "Um item com o nome \"%@\" já existe neste local. O que você deseja fazer?", .en: "An item named \"%@\" already exists in this location. What do you want to do?"],
+            "rotate": [.ptBR: "Rotacionar", .en: "Rotate"],
+            "resize": [.ptBR: "Redimensionar", .en: "Resize"],
+            "rotate_image": [.ptBR: "Rotacionar Imagem", .en: "Rotate Image"],
+            "resize_image": [.ptBR: "Redimensionar Imagem", .en: "Resize Image"],
+            "rotation_angle": [.ptBR: "Ângulo de Rotação", .en: "Rotation Angle"],
+            "width": [.ptBR: "Largura", .en: "Width"],
+            "height": [.ptBR: "Altura", .en: "Height"],
+            "maintain_aspect_ratio": [.ptBR: "Manter proporção", .en: "Maintain aspect ratio"],
+            "apply": [.ptBR: "Aplicar", .en: "Apply"],
+            "percent": [.ptBR: "Porcentagem", .en: "Percent"],
+            "edit_dimension": [.ptBR: "Dimensão base", .en: "Base dimension"],
+            "save_as_copy": [.ptBR: "Salvar como cópia", .en: "Save as copy"],
         ]
 
         let spanish: [String: String] = [
@@ -309,6 +321,18 @@ enum Translations {
             "skip": "Omitir",
             "item_exists_title": "El elemento ya existe",
             "item_exists_message": "Ya existe un elemento llamado \"%@\" en esta ubicación. ¿Qué deseas hacer?",
+            "rotate": "Rotar",
+            "resize": "Redimensionar",
+            "rotate_image": "Rotar imagen",
+            "resize_image": "Redimensionar imagen",
+            "rotation_angle": "Ángulo de rotación",
+            "width": "Anchura",
+            "height": "Altura",
+            "maintain_aspect_ratio": "Mantener proporción",
+            "apply": "Aplicar",
+            "percent": "Porcentaje",
+            "edit_dimension": "Dimensión base",
+            "save_as_copy": "Guardar como copia",
         ]
 
         if lang == .es {

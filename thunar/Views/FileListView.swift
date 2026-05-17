@@ -35,6 +35,8 @@ struct FileListView: View {
     @State private var sortOrder = [KeyPathComparator(\FileItem.name)]
     @State private var itemsToDelete: [FileItem] = []
     @State private var infoItem: FileItem?
+    @State private var rotatingItem: FileItem?
+    @State private var resizingItem: FileItem?
     @State private var previewURL: URL?
     @State private var selectionRectStart: CGPoint? = nil
     @State private var selectionRectEnd: CGPoint? = nil
@@ -234,6 +236,30 @@ struct FileListView: View {
                 )
             )
         }
+        .sheet(item: $rotatingItem) { item in
+            RotateImageSheet(
+                isPresented: Binding(
+                    get: { rotatingItem != nil },
+                    set: { if !$0 { rotatingItem = nil } }
+                ),
+                item: item,
+                onApply: {
+                    fileManager.loadDirectory()
+                }
+            )
+        }
+        .sheet(item: $resizingItem) { item in
+            ResizeImageSheet(
+                isPresented: Binding(
+                    get: { resizingItem != nil },
+                    set: { if !$0 { resizingItem = nil } }
+                ),
+                item: item,
+                onApply: {
+                    fileManager.loadDirectory()
+                }
+            )
+        }
         .alert(languageManager.local("error"), isPresented: Binding<Bool>(
             get: { fileManager.errorMessage != nil },
             set: { if !$0 { fileManager.errorMessage = nil } }
@@ -314,7 +340,7 @@ struct FileListView: View {
             searchText = ""
         }
         .onKeyPress { keyPress in
-            if editingItem != nil || showingCreateFolder || showingCreateFile { return .ignored }
+            if editingItem != nil || showingCreateFolder || showingCreateFile || rotatingItem != nil || resizingItem != nil { return .ignored }
 
             if keyPress.key == .escape, !searchText.isEmpty {
                 searchText = ""
@@ -506,6 +532,15 @@ struct FileListView: View {
                 }
                 Button(action: { infoItem = item }) {
                     Label(languageManager.local("get_info"), systemImage: "info.circle")
+                }
+                if item.isImage {
+                    Divider()
+                    Button(action: { rotatingItem = item }) {
+                        Label(languageManager.local("rotate"), systemImage: "rotate.right")
+                    }
+                    Button(action: { resizingItem = item }) {
+                        Label(languageManager.local("resize"), systemImage: "arrow.up.backward.and.arrow.down.forward")
+                    }
                 }
                 if item.isDirectory {
                     Button(action: { fileManager.openInTerminal(url: item.url) }) {
@@ -709,6 +744,15 @@ struct FileListView: View {
                                 }
                                 Button(action: { infoItem = item }) {
                                     Label(languageManager.local("get_info"), systemImage: "info.circle")
+                                }
+                                if item.isImage {
+                                    Divider()
+                                    Button(action: { rotatingItem = item }) {
+                                        Label(languageManager.local("rotate"), systemImage: "rotate.right")
+                                    }
+                                    Button(action: { resizingItem = item }) {
+                                        Label(languageManager.local("resize"), systemImage: "arrow.up.backward.and.arrow.down.forward")
+                                    }
                                 }
                                 if item.isDirectory {
                                     Button(action: { fileManager.openInTerminal(url: item.url) }) {

@@ -8,6 +8,7 @@
 import AppKit
 import Foundation
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct FileItem: Identifiable, Hashable {
     let id: UUID
@@ -56,5 +57,10 @@ struct FileItem: Identifiable, Hashable {
         formatter.timeStyle = .short
         formatter.locale = Locale.current
         return formatter.string(from: modificationDate)
+    }
+
+    var isImage: Bool {
+        guard let type = UTType(filenameExtension: url.pathExtension) else { return false }
+        return type.conforms(to: .image)
     }
 }

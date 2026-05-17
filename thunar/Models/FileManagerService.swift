@@ -430,7 +430,7 @@ class FileManagerService: ObservableObject {
             var zipURL = currentDir.appendingPathComponent(zipName)
 
             if FileManager.default.fileExists(atPath: zipURL.path) {
-                let response = await MainActor.run { [zipName, zipURL] in
+                let response = await MainActor.run { [zipName = zipName, zipURL = zipURL] in
                     let alert = NSAlert()
                     alert.messageText = self.languageManager.local("item_exists_title")
                     alert.informativeText = String(format: self.languageManager.local("item_exists_message"), zipName)
@@ -501,7 +501,7 @@ class FileManagerService: ObservableObject {
             var destinationURL = currentDir.appendingPathComponent(baseName, isDirectory: true)
 
             if FileManager.default.fileExists(atPath: destinationURL.path) {
-                let response = await MainActor.run { [baseName, destinationURL] in
+                let response = await MainActor.run { [baseName = baseName, destinationURL = destinationURL] in
                     let alert = NSAlert()
                     alert.messageText = self.languageManager.local("item_exists_title")
                     alert.informativeText = String(format: self.languageManager.local("item_exists_message"), baseName)
