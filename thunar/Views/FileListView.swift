@@ -273,6 +273,12 @@ struct FileListView: View {
                 self.selectionAnchorID = nil
             }
         }
+        .onChange(of: selectedFileIDs) { newValue in
+            fileManager.selectedURLs = sortedFiles.filter { newValue.contains($0.id) }.map(\.url)
+        }
+        .onChange(of: sortedFiles) { newValue in
+            fileManager.selectedURLs = newValue.filter { selectedFileIDs.contains($0.id) }.map(\.url)
+        }
         .onChange(of: fileManager.currentDirectory) {
             searchText = ""
         }

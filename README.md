@@ -12,6 +12,7 @@ Gerenciador de arquivos para macOS escrito em Swift com SwiftUI.
 
 - Navegação com abas
 - Modo lista e modo ícones
+- Arrastar e soltar (Drag and Drop) de arquivos e pastas com suporte a seleção múltipla
 - Copiar, recortar e colar
 - Renomeação inteligente e segura:
   - Divisão vertical clara entre o nome base do arquivo e sua extensão

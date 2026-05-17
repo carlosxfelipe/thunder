@@ -30,6 +30,7 @@ class FileManagerService: ObservableObject {
     @Published var currentDirectory: URL
     @Published var files: [FileItem] = []
     @Published var selectedFiles: Set<FileItem> = []
+    @Published var selectedURLs: [URL] = []
     @Published var navigationHistory: [URL] = []
     @Published var historyIndex: Int = 0
     @Published var favorites: [URL] = []
@@ -689,11 +690,19 @@ class FileManagerService: ObservableObject {
 
     /// Moves files/folders to a destination directory (used by drag & drop).
     func moveItems(_ urls: [URL], to destinationDir: URL) {
+        var urlsToMove = urls
+        if urls.count == 1, let firstURL = urls.first,
+           selectedURLs.contains(firstURL),
+           selectedURLs.count > 1
+        {
+            urlsToMove = selectedURLs
+        }
+
         var movedCount = 0
         var affectedDirectories: Set<URL> = [destinationDir]
         var lastName = ""
 
-        for sourceURL in urls {
+        for sourceURL in urlsToMove {
             // Don't move into itself or same directory
             let sourceParent = sourceURL.deletingLastPathComponent().standardizedFileURL
             if sourceParent == destinationDir.standardizedFileURL {

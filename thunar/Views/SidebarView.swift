@@ -193,7 +193,7 @@ struct SidebarView: View {
         dropTargetSidebarID = nil
         var droppedURLs: [URL] = []
         let group = DispatchGroup()
-        
+
         for provider in providers {
             group.enter()
             _ = provider.loadObject(ofClass: URL.self) { url, _ in
@@ -205,7 +205,7 @@ struct SidebarView: View {
                 group.leave()
             }
         }
-        
+
         group.notify(queue: .main) {
             let urlsToMove = droppedURLs.filter { $0 != destination }
             if !urlsToMove.isEmpty {
