@@ -297,8 +297,9 @@ struct FileListView: View {
             }
 
             if keyPress.key == .return, viewMode == .icons {
-                if let currentId = selectedFileIDs.first, let item = sortedFiles.first(where: { $0.id == currentId }) {
-                    fileManager.openItem(item)
+                let selectedItems = sortedFiles.filter { selectedFileIDs.contains($0.id) }
+                if !selectedItems.isEmpty {
+                    fileManager.openItems(selectedItems)
                     return .handled
                 }
                 return .ignored
@@ -459,12 +460,14 @@ struct FileListView: View {
         .contextMenu(forSelectionType: UUID.self) { items in
             if let id = items.first, let item = fileManager.files.first(where: { $0.id == id }) {
                 Button(action: {
-                    fileManager.openItem(item)
+                    fileManager.openItems(contextItems(for: item))
                 }) {
                     Label(languageManager.local("open"), systemImage: "arrow.right.circle")
                 }
-                Button(action: { editingItem = item }) {
-                    Label(languageManager.local("rename"), systemImage: "pencil")
+                if items.count <= 1 {
+                    Button(action: { editingItem = item }) {
+                        Label(languageManager.local("rename"), systemImage: "pencil")
+                    }
                 }
                 Button(action: {
                     let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
@@ -564,9 +567,8 @@ struct FileListView: View {
                 }
             }
         } primaryAction: { items in
-            if let id = items.first, let item = fileManager.files.first(where: { $0.id == id }) {
-                fileManager.openItem(item)
-            }
+            let selectedItems = fileManager.files.filter { items.contains($0.id) }
+            fileManager.openItems(selectedItems)
         }
         .contextMenu {
             Button(action: { showingCreateFolder = true }) {
@@ -654,7 +656,7 @@ struct FileListView: View {
                             .background(selectedFileIDs.contains(item.id) ? Color.accentColor.opacity(0.2) : Color.clear)
                             .cornerRadius(8)
                             .onTapGesture(count: 2) {
-                                fileManager.openItem(item)
+                                fileManager.openItems(contextItems(for: item))
                             }
                             .simultaneousGesture(
                                 TapGesture().onEnded {
@@ -675,12 +677,14 @@ struct FileListView: View {
                             )
                             .contextMenu {
                                 Button(action: {
-                                    fileManager.openItem(item)
+                                    fileManager.openItems(contextItems(for: item))
                                 }) {
                                     Label(languageManager.local("open"), systemImage: "arrow.right.circle")
                                 }
-                                Button(action: { editingItem = item }) {
-                                    Label(languageManager.local("rename"), systemImage: "pencil")
+                                if contextItems(for: item).count <= 1 {
+                                    Button(action: { editingItem = item }) {
+                                        Label(languageManager.local("rename"), systemImage: "pencil")
+                                    }
                                 }
                                 Button(action: {
                                     let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
@@ -1345,9 +1349,33 @@ struct RenameSheet: View {
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.secondary)
 
-                    TextField(languageManager.local("new_name_placeholder"), text: $baseName)
-                        .textFieldStyle(.roundedBorder)
-                        .focused($focusedField, equals: .baseName)
+                    HStack(spacing: 8) {
+                        TextField(languageManager.local("new_name_placeholder"), text: $baseName)
+                            .textFieldStyle(.roundedBorder)
+                            .focused($focusedField, equals: .baseName)
+
+                        Menu {
+                            Button(languageManager.local("uppercase")) {
+                                baseName = baseName.uppercased()
+                            }
+                            Button(languageManager.local("lowercase")) {
+                                baseName = baseName.lowercased()
+                            }
+                            Button(languageManager.local("capitalize")) {
+                                baseName = baseName.capitalized
+                            }
+                        } label: {
+                            Image(systemName: "textformat.size")
+                                .foregroundColor(.secondary)
+                                .font(.system(size: 12))
+                                .frame(width: 22, height: 22)
+                                .background(Color.secondary.opacity(0.1))
+                                .clipShape(Circle())
+                        }
+                        .menuStyle(.button)
+                        .buttonStyle(.plain)
+                        .help(languageManager.local("text_case_help"))
+                    }
                 }
 
                 // Extension (if applicable)

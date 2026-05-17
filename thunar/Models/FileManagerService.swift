@@ -435,6 +435,12 @@ class FileManagerService: ObservableObject {
         }
     }
 
+    func openItems(_ items: [FileItem]) {
+        for item in items {
+            openItem(item)
+        }
+    }
+
     func compressItems(_ items: [FileItem], to name: String, format: CompressionFormat) {
         let currentDir = currentDirectory
         isProcessing = true

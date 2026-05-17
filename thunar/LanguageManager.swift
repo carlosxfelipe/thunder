@@ -200,6 +200,10 @@ enum Translations {
             "extension_warning": [.ptBR: "Alterar a extensão pode tornar o arquivo ilegível.", .en: "Changing the extension might make the file unreadable."],
             "unlock_extension_help": [.ptBR: "Desbloquear extensão para edição", .en: "Unlock extension for editing"],
             "lock_extension_help": [.ptBR: "Bloquear extensão", .en: "Lock extension"],
+            "uppercase": [.ptBR: "TUDO MAIÚSCULO", .en: "UPPERCASE"],
+            "lowercase": [.ptBR: "tudo minúsculo", .en: "lowercase"],
+            "capitalize": [.ptBR: "Primeira Letra Maiúscula", .en: "Capitalize"],
+            "text_case_help": [.ptBR: "Alterar maiúsculas/minúsculas", .en: "Change text case"],
         ]
 
         let spanish: [String: String] = [
@@ -349,6 +353,10 @@ enum Translations {
             "extension_warning": "Cambiar la extensión puede hacer que el archivo sea ilegible.",
             "unlock_extension_help": "Desbloquear extensión para editar",
             "lock_extension_help": "Bloquear extensión",
+            "uppercase": "MAYÚSCULAS",
+            "lowercase": "minúsculas",
+            "capitalize": "Primera Letra en Mayúscula",
+            "text_case_help": "Cambiar mayúsculas/minúsculas",
         ]
 
         if lang == .es {
