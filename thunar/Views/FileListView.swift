@@ -464,7 +464,7 @@ struct FileListView: View {
                 }) {
                     Label(languageManager.local("get_info"), systemImage: "info.circle")
                 }
-                if item.isImage {
+                if item.isImage && items.count == 1 {
                     Divider()
                     Button(action: { rotatingItem = item }) {
                         Label(languageManager.local("rotate"), systemImage: "rotate.right")
@@ -680,7 +680,7 @@ struct FileListView: View {
                                 }) {
                                     Label(languageManager.local("get_info"), systemImage: "info.circle")
                                 }
-                                if item.isImage {
+                                if item.isImage && contextItems(for: item).count == 1 {
                                     Divider()
                                     Button(action: { rotatingItem = item }) {
                                         Label(languageManager.local("rotate"), systemImage: "rotate.right")
