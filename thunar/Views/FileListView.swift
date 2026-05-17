@@ -43,6 +43,7 @@ struct FileListView: View {
     @State private var searchText = ""
     @State private var itemsToCompress: [FileItem] = []
     @State private var showingCompressSheet = false
+    @State private var dropTargetItemID: UUID? = nil
     @FocusState private var isListFocused: Bool
     @FocusState private var isSearchFocused: Bool
 
@@ -414,20 +415,7 @@ struct FileListView: View {
     var listView: some View {
         Table(sortedFiles, selection: $selectedFileIDs, sortOrder: $sortOrder) {
             TableColumn(languageManager.local("name"), value: \.name) { item in
-                HStack(spacing: 8) {
-                    FileIconView(item: item, size: CGSize(width: 16, height: 16))
-                        .foregroundColor(.accentColor)
-                    Text(item.name)
-                    if !item.tags.isEmpty {
-                        HStack(spacing: 2) {
-                            ForEach(item.tags) { tag in
-                                Circle()
-                                    .fill(tag.color)
-                                    .frame(width: 10, height: 10)
-                            }
-                        }
-                    }
-                }
+                listRowContent(for: item)
             }
 
             if isSearching {
@@ -622,167 +610,7 @@ struct FileListView: View {
                         GridItem(.adaptive(minimum: iconGridMinimum), spacing: iconGridSpacing),
                     ], spacing: iconGridSpacing) {
                         ForEach(sortedFiles) { item in
-                            VStack(spacing: 8) {
-                                ZStack(alignment: .topTrailing) {
-                                    FileIconView(item: item, size: CGSize(width: iconSize, height: iconSize))
-                                        .foregroundColor(.accentColor)
-                                    if !item.tags.isEmpty {
-                                        HStack(spacing: 1) {
-                                            ForEach(item.tags) { tag in
-                                                Circle()
-                                                    .fill(tag.color)
-                                                    .frame(width: 8, height: 8)
-                                            }
-                                        }
-                                        .offset(x: 4, y: -2)
-                                    }
-                                }
-                                Text(item.name)
-                                    .font(.system(size: iconTextSize))
-                                    .lineLimit(2)
-                                    .multilineTextAlignment(.center)
-                                    .frame(maxWidth: iconTextWidth)
-                                if isSearching {
-                                    Text(locationText(for: item))
-                                        .font(.system(size: iconLocationTextSize))
-                                        .foregroundColor(.secondary)
-                                        .lineLimit(2)
-                                        .multilineTextAlignment(.center)
-                                        .truncationMode(.middle)
-                                        .frame(maxWidth: iconTextWidth)
-                                }
-                            }
-                            .padding(12)
-                            .background(selectedFileIDs.contains(item.id) ? Color.accentColor.opacity(0.2) : Color.clear)
-                            .cornerRadius(8)
-                            .onTapGesture(count: 2) {
-                                fileManager.openItems(contextItems(for: item))
-                            }
-                            .simultaneousGesture(
-                                TapGesture().onEnded {
-                                    let flags = NSApp.currentEvent?.modifierFlags ?? []
-                                    if flags.contains(.command) || flags.contains(.shift) {
-                                        if selectedFileIDs.contains(item.id) {
-                                            selectedFileIDs.remove(item.id)
-                                        } else {
-                                            selectedFileIDs.insert(item.id)
-                                        }
-                                        lastSelectedID = item.id
-                                    } else {
-                                        selectedFileIDs = [item.id]
-                                        lastSelectedID = item.id
-                                        selectionAnchorID = item.id
-                                    }
-                                }
-                            )
-                            .contextMenu {
-                                Button(action: {
-                                    fileManager.openItems(contextItems(for: item))
-                                }) {
-                                    Label(languageManager.local("open"), systemImage: "arrow.right.circle")
-                                }
-                                if contextItems(for: item).count <= 1 {
-                                    Button(action: { editingItem = item }) {
-                                        Label(languageManager.local("rename"), systemImage: "pencil")
-                                    }
-                                }
-                                Button(action: {
-                                    let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
-                                    showInfoPanels(for: items)
-                                }) {
-                                    Label(languageManager.local("get_info"), systemImage: "info.circle")
-                                }
-                                if item.isImage && contextItems(for: item).count == 1 {
-                                    Divider()
-                                    Button(action: { rotatingItem = item }) {
-                                        Label(languageManager.local("rotate"), systemImage: "rotate.right")
-                                    }
-                                    Button(action: { resizingItem = item }) {
-                                        Label(languageManager.local("resize"), systemImage: "arrow.up.backward.and.arrow.down.forward")
-                                    }
-                                }
-                                if item.isDirectory && (!selectedFileIDs.contains(item.id) || selectedFileIDs.count == 1) {
-                                    Button(action: { fileManager.openInTerminal(url: item.url) }) {
-                                        Label(languageManager.local("open_terminal"), systemImage: "terminal")
-                                    }
-                                    if fileManager.isFavorite(item.url) {
-                                        Button(action: { fileManager.removeFromFavorites(item.url) }) {
-                                            Label(languageManager.local("remove_favorites"), systemImage: "star.slash")
-                                        }
-                                    } else {
-                                        Button(action: { fileManager.addToFavorites(item.url) }) {
-                                            Label(languageManager.local("add_favorites"), systemImage: "star")
-                                        }
-                                    }
-                                    Divider()
-                                }
-                                Button(action: {
-                                    let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
-                                    fileManager.copyItems(items)
-                                }) {
-                                    Label(languageManager.local("copy"), systemImage: "doc.on.doc")
-                                }
-                                Button(action: {
-                                    let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
-                                    fileManager.cutItems(items)
-                                }) {
-                                    Label(languageManager.local("cut"), systemImage: "scissors")
-                                }
-                                Divider()
-                                Button(action: {
-                                    let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
-                                    itemsToCompress = items
-                                    showingCompressSheet = true
-                                }) {
-                                    Label(languageManager.local("compress"), systemImage: "archivebox")
-                                }
-                                Divider()
-                                Menu {
-                                    ForEach(FinderTag.allCases) { tag in
-                                        Button(action: {
-                                            let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
-                                            if item.tags.contains(tag) {
-                                                fileManager.removeTag(tag, from: items)
-                                            } else {
-                                                fileManager.setTag(tag, on: items)
-                                            }
-                                        }) {
-                                            HStack {
-                                                Circle()
-                                                    .fill(tag.color)
-                                                    .frame(width: 10, height: 10)
-                                                Text(languageManager.local(tag.rawValue))
-                                                if item.tags.contains(tag) {
-                                                    Spacer()
-                                                    Image(systemName: "checkmark")
-                                                }
-                                            }
-                                        }
-                                    }
-                                    if !item.tags.isEmpty {
-                                        Divider()
-                                        Button(action: {
-                                            let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
-                                            fileManager.removeAllTags(from: items)
-                                        }) {
-                                            Label(languageManager.local("remove_all"), systemImage: "xmark")
-                                        }
-                                    }
-                                } label: {
-                                    Label(languageManager.local("tags"), systemImage: "tag")
-                                }
-                                Divider()
-                                Button(action: {
-                                    fileManager.deleteItems(contextItems(for: item))
-                                }) {
-                                    Label(languageManager.local("move_to_trash"), systemImage: "trash")
-                                }
-                                Button(role: .destructive, action: {
-                                    itemsToDelete = contextItems(for: item)
-                                }) {
-                                    Label(languageManager.local("delete_permanently"), systemImage: "xmark.bin")
-                                }
-                            }
+                            iconItemView(for: item)
                         }
                     }
                     .padding(16)
@@ -827,6 +655,245 @@ struct FileListView: View {
             Button(action: { fileManager.openInTerminal() }) {
                 Label(languageManager.local("open_terminal"), systemImage: "terminal")
             }
+        }
+    }
+
+    // MARK: - Extracted Views (required to avoid Swift type-checker timeout)
+
+    @ViewBuilder
+    private func listRowContent(for item: FileItem) -> some View {
+        HStack(spacing: 8) {
+            FileIconView(item: item, size: CGSize(width: 16, height: 16))
+                .foregroundColor(.accentColor)
+            Text(item.name)
+            if !item.tags.isEmpty {
+                HStack(spacing: 2) {
+                    ForEach(item.tags) { tag in
+                        Circle()
+                            .fill(tag.color)
+                            .frame(width: 10, height: 10)
+                    }
+                }
+            }
+        }
+        .onDrag {
+            NSItemProvider(object: item.url as NSURL)
+        }
+        .dropDestination(for: URL.self) { droppedURLs, _ in
+            guard item.isDirectory else { return false }
+            let urlsToMove = resolveDropURLs(droppedURLs)
+                .filter { $0 != item.url }
+            guard !urlsToMove.isEmpty else { return false }
+            fileManager.moveItems(urlsToMove, to: item.url)
+            return true
+        } isTargeted: { _ in
+        }
+    }
+
+    /// When dragging a single item that is part of a multi-selection,
+    /// expand the drop to include all selected file URLs.
+    private func resolveDropURLs(_ droppedURLs: [URL]) -> [URL] {
+        if droppedURLs.count == 1, let droppedURL = droppedURLs.first,
+           let draggedItem = sortedFiles.first(where: { $0.url == droppedURL }),
+           selectedFileIDs.contains(draggedItem.id),
+           selectedFileIDs.count > 1
+        {
+            return sortedFiles.filter { selectedFileIDs.contains($0.id) }.map(\.url)
+        }
+        return droppedURLs
+    }
+
+    @ViewBuilder
+    private func iconItemContent(for item: FileItem) -> some View {
+        VStack(spacing: 8) {
+            ZStack(alignment: .topTrailing) {
+                FileIconView(item: item, size: CGSize(width: iconSize, height: iconSize))
+                    .foregroundColor(.accentColor)
+                if !item.tags.isEmpty {
+                    HStack(spacing: 1) {
+                        ForEach(item.tags) { tag in
+                            Circle()
+                                .fill(tag.color)
+                                .frame(width: 8, height: 8)
+                        }
+                    }
+                    .offset(x: 4, y: -2)
+                }
+            }
+            Text(item.name)
+                .font(.system(size: iconTextSize))
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: iconTextWidth)
+            if isSearching {
+                Text(locationText(for: item))
+                    .font(.system(size: iconLocationTextSize))
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .truncationMode(.middle)
+                    .frame(maxWidth: iconTextWidth)
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(selectedFileIDs.contains(item.id) ? Color.accentColor.opacity(0.2) : Color.clear)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(dropTargetItemID == item.id ? Color.accentColor : Color.clear, lineWidth: 2)
+        )
+    }
+
+    @ViewBuilder
+    private func iconItemView(for item: FileItem) -> some View {
+        iconItemContent(for: item)
+            .onDrag {
+                NSItemProvider(object: item.url as NSURL)
+            }
+            .dropDestination(for: URL.self) { droppedURLs, _ in
+                guard item.isDirectory else { return false }
+                let urlsToMove = resolveDropURLs(droppedURLs)
+                    .filter { $0 != item.url }
+                guard !urlsToMove.isEmpty else { return false }
+                fileManager.moveItems(urlsToMove, to: item.url)
+                return true
+            } isTargeted: { isTargeted in
+                dropTargetItemID = isTargeted ? item.id : nil
+            }
+            .onTapGesture(count: 2) {
+                fileManager.openItems(contextItems(for: item))
+            }
+            .simultaneousGesture(
+                TapGesture().onEnded {
+                    let flags = NSApp.currentEvent?.modifierFlags ?? []
+                    if flags.contains(.command) || flags.contains(.shift) {
+                        if selectedFileIDs.contains(item.id) {
+                            selectedFileIDs.remove(item.id)
+                        } else {
+                            selectedFileIDs.insert(item.id)
+                        }
+                        lastSelectedID = item.id
+                    } else {
+                        selectedFileIDs = [item.id]
+                        lastSelectedID = item.id
+                        selectionAnchorID = item.id
+                    }
+                }
+            )
+            .contextMenu {
+                iconContextMenu(for: item)
+            }
+    }
+
+    @ViewBuilder
+    private func iconContextMenu(for item: FileItem) -> some View {
+        Button(action: {
+            fileManager.openItems(contextItems(for: item))
+        }) {
+            Label(languageManager.local("open"), systemImage: "arrow.right.circle")
+        }
+        if contextItems(for: item).count <= 1 {
+            Button(action: { editingItem = item }) {
+                Label(languageManager.local("rename"), systemImage: "pencil")
+            }
+        }
+        Button(action: {
+            let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+            showInfoPanels(for: items)
+        }) {
+            Label(languageManager.local("get_info"), systemImage: "info.circle")
+        }
+        if item.isImage && contextItems(for: item).count == 1 {
+            Divider()
+            Button(action: { rotatingItem = item }) {
+                Label(languageManager.local("rotate"), systemImage: "rotate.right")
+            }
+            Button(action: { resizingItem = item }) {
+                Label(languageManager.local("resize"), systemImage: "arrow.up.backward.and.arrow.down.forward")
+            }
+        }
+        if item.isDirectory && (!selectedFileIDs.contains(item.id) || selectedFileIDs.count == 1) {
+            Button(action: { fileManager.openInTerminal(url: item.url) }) {
+                Label(languageManager.local("open_terminal"), systemImage: "terminal")
+            }
+            if fileManager.isFavorite(item.url) {
+                Button(action: { fileManager.removeFromFavorites(item.url) }) {
+                    Label(languageManager.local("remove_favorites"), systemImage: "star.slash")
+                }
+            } else {
+                Button(action: { fileManager.addToFavorites(item.url) }) {
+                    Label(languageManager.local("add_favorites"), systemImage: "star")
+                }
+            }
+            Divider()
+        }
+        Button(action: {
+            let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+            fileManager.copyItems(items)
+        }) {
+            Label(languageManager.local("copy"), systemImage: "doc.on.doc")
+        }
+        Button(action: {
+            let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+            fileManager.cutItems(items)
+        }) {
+            Label(languageManager.local("cut"), systemImage: "scissors")
+        }
+        Divider()
+        Button(action: {
+            let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+            itemsToCompress = items
+            showingCompressSheet = true
+        }) {
+            Label(languageManager.local("compress"), systemImage: "archivebox")
+        }
+        Divider()
+        Menu {
+            ForEach(FinderTag.allCases) { tag in
+                Button(action: {
+                    let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+                    if item.tags.contains(tag) {
+                        fileManager.removeTag(tag, from: items)
+                    } else {
+                        fileManager.setTag(tag, on: items)
+                    }
+                }) {
+                    HStack {
+                        Circle()
+                            .fill(tag.color)
+                            .frame(width: 10, height: 10)
+                        Text(languageManager.local(tag.rawValue))
+                        if item.tags.contains(tag) {
+                            Spacer()
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+            if !item.tags.isEmpty {
+                Divider()
+                Button(action: {
+                    let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+                    fileManager.removeAllTags(from: items)
+                }) {
+                    Label(languageManager.local("remove_all"), systemImage: "xmark")
+                }
+            }
+        } label: {
+            Label(languageManager.local("tags"), systemImage: "tag")
+        }
+        Divider()
+        Button(action: {
+            fileManager.deleteItems(contextItems(for: item))
+        }) {
+            Label(languageManager.local("move_to_trash"), systemImage: "trash")
+        }
+        Button(role: .destructive, action: {
+            itemsToDelete = contextItems(for: item)
+        }) {
+            Label(languageManager.local("delete_permanently"), systemImage: "xmark.bin")
         }
     }
 

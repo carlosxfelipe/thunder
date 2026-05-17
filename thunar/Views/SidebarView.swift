@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 enum SidebarSelection: Hashable {
     case place(SidebarItem)
@@ -18,6 +19,7 @@ struct SidebarView: View {
     @StateObject private var volumesService = VolumesService()
     @ObservedObject private var languageManager = LanguageManager.shared
     @State private var selection: SidebarSelection?
+    @State private var dropTargetSidebarID: String? = nil
 
     @AppStorage("hiddenSidebarItems") private var hiddenSidebarItems: String = ""
     @AppStorage("showVolumes") private var showVolumes: Bool = true
@@ -36,31 +38,14 @@ struct SidebarView: View {
         List(selection: $selection) {
             Section(languageManager.local("locations")) {
                 ForEach(SidebarItem.allCases.filter(isVisible)) { item in
-                    SidebarRow(item: item)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            selection = .place(item)
-                            fileManager.navigateTo(item.url)
-                        }
-                        .tag(SidebarSelection.place(item))
+                    locationRow(for: item)
                 }
             }
 
             if showFavorites && !fileManager.favorites.isEmpty {
                 Section(languageManager.local("favorites")) {
                     ForEach(fileManager.favorites, id: \.self) { url in
-                        FavoriteRow(url: url)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                selection = .favorite(url)
-                                fileManager.navigateTo(url)
-                            }
-                            .tag(SidebarSelection.favorite(url))
-                            .contextMenu {
-                                Button(languageManager.local("remove_favorites")) {
-                                    fileManager.removeFromFavorites(url)
-                                }
-                            }
+                        favoriteRowContent(for: url)
                     }
                 }
             }
@@ -140,6 +125,94 @@ struct SidebarView: View {
         }
         .listStyle(.sidebar)
         .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 250)
+    }
+
+    @ViewBuilder
+    private func locationRow(for item: SidebarItem) -> some View {
+        SidebarRow(item: item)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                selection = .place(item)
+                fileManager.navigateTo(item.url)
+            }
+            .tag(SidebarSelection.place(item))
+            .listRowBackground(
+                Group {
+                    if dropTargetSidebarID == item.id {
+                        RoundedRectangle(cornerRadius: 7)
+                            .fill(Color.accentColor.opacity(0.15))
+                            .padding(.horizontal, 8)
+                    }
+                }
+            )
+            .onDrop(of: [.fileURL], isTargeted: Binding<Bool>(
+                get: { dropTargetSidebarID == item.id },
+                set: { isTargeted in
+                    dropTargetSidebarID = isTargeted ? item.id : nil
+                }
+            )) { providers in
+                handleSidebarDrop(providers: providers, destination: item.url)
+            }
+    }
+
+    @ViewBuilder
+    private func favoriteRowContent(for url: URL) -> some View {
+        let favID = "fav-" + url.path
+        FavoriteRow(url: url)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                selection = .favorite(url)
+                fileManager.navigateTo(url)
+            }
+            .tag(SidebarSelection.favorite(url))
+            .contextMenu {
+                Button(languageManager.local("remove_favorites")) {
+                    fileManager.removeFromFavorites(url)
+                }
+            }
+            .listRowBackground(
+                Group {
+                    if dropTargetSidebarID == favID {
+                        RoundedRectangle(cornerRadius: 7)
+                            .fill(Color.accentColor.opacity(0.15))
+                            .padding(.horizontal, 8)
+                    }
+                }
+            )
+            .onDrop(of: [.fileURL], isTargeted: Binding<Bool>(
+                get: { dropTargetSidebarID == favID },
+                set: { isTargeted in
+                    dropTargetSidebarID = isTargeted ? favID : nil
+                }
+            )) { providers in
+                handleSidebarDrop(providers: providers, destination: url)
+            }
+    }
+
+    private func handleSidebarDrop(providers: [NSItemProvider], destination: URL) -> Bool {
+        dropTargetSidebarID = nil
+        var droppedURLs: [URL] = []
+        let group = DispatchGroup()
+        
+        for provider in providers {
+            group.enter()
+            _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                if let url = url {
+                    DispatchQueue.main.async {
+                        droppedURLs.append(url)
+                    }
+                }
+                group.leave()
+            }
+        }
+        
+        group.notify(queue: .main) {
+            let urlsToMove = droppedURLs.filter { $0 != destination }
+            if !urlsToMove.isEmpty {
+                fileManager.moveItems(urlsToMove, to: destination)
+            }
+        }
+        return true
     }
 }
 

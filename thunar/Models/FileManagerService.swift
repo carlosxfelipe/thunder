@@ -687,6 +687,77 @@ class FileManagerService: ObservableObject {
         }
     }
 
+    /// Moves files/folders to a destination directory (used by drag & drop).
+    func moveItems(_ urls: [URL], to destinationDir: URL) {
+        var movedCount = 0
+        var affectedDirectories: Set<URL> = [destinationDir]
+        var lastName = ""
+
+        for sourceURL in urls {
+            // Don't move into itself or same directory
+            let sourceParent = sourceURL.deletingLastPathComponent().standardizedFileURL
+            if sourceParent == destinationDir.standardizedFileURL {
+                continue
+            }
+            // Don't move a folder into its own subtree
+            if destinationDir.standardizedFileURL.path.hasPrefix(sourceURL.standardizedFileURL.path + "/") {
+                continue
+            }
+
+            var destURL = destinationDir.appendingPathComponent(sourceURL.lastPathComponent)
+
+            if fileManager.fileExists(atPath: destURL.path) {
+                let alert = NSAlert()
+                alert.messageText = languageManager.local("item_exists_title")
+                alert.informativeText = String(format: languageManager.local("item_exists_message"), sourceURL.lastPathComponent)
+                alert.icon = NSWorkspace.shared.icon(forFile: destURL.path)
+                alert.addButton(withTitle: languageManager.local("replace"))
+                alert.addButton(withTitle: languageManager.local("keep_both"))
+                alert.addButton(withTitle: languageManager.local("skip"))
+
+                let response = alert.runModal()
+
+                if response == .alertFirstButtonReturn {
+                    do {
+                        try fileManager.removeItem(at: destURL)
+                    } catch {
+                        errorMessage = "Error replacing: \(error.localizedDescription)"
+                        continue
+                    }
+                } else if response == .alertSecondButtonReturn {
+                    var counter = 2
+                    let baseName = sourceURL.deletingPathExtension().lastPathComponent
+                    let ext = sourceURL.pathExtension
+                    while fileManager.fileExists(atPath: destURL.path) {
+                        let newName = ext.isEmpty ? "\(baseName) \(counter)" : "\(baseName) \(counter).\(ext)"
+                        destURL = destinationDir.appendingPathComponent(newName)
+                        counter += 1
+                    }
+                } else {
+                    continue
+                }
+            }
+
+            do {
+                try fileManager.moveItem(at: sourceURL, to: destURL)
+                affectedDirectories.insert(sourceURL.deletingLastPathComponent())
+                movedCount += 1
+                lastName = sourceURL.lastPathComponent
+            } catch {
+                errorMessage = "Error moving: \(error.localizedDescription)"
+            }
+        }
+
+        loadDirectory()
+        postFileSystemChange(for: Array(affectedDirectories))
+
+        if movedCount == 1 {
+            postStatus(String(format: languageManager.local("moved_singular"), lastName, destinationDir.lastPathComponent))
+        } else if movedCount > 1 {
+            postStatus(String(format: languageManager.local("moved_plural"), movedCount, destinationDir.lastPathComponent))
+        }
+    }
+
     func copyItems(_ items: [FileItem]) {
         clipboardService.clipboard = (items.map { $0.url }, .copy)
         let count = items.count

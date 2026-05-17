@@ -204,6 +204,8 @@ enum Translations {
             "lowercase": [.ptBR: "tudo minúsculo", .en: "lowercase"],
             "capitalize": [.ptBR: "Primeira Letra Maiúscula", .en: "Capitalize"],
             "text_case_help": [.ptBR: "Alterar maiúsculas/minúsculas", .en: "Change text case"],
+            "moved_singular": [.ptBR: "\"%@\" movido para \"%@\"", .en: "\"%@\" moved to \"%@\""],
+            "moved_plural": [.ptBR: "%d itens movidos para \"%@\"", .en: "%d items moved to \"%@\""],
         ]
 
         let spanish: [String: String] = [
@@ -357,6 +359,8 @@ enum Translations {
             "lowercase": "minúsculas",
             "capitalize": "Primera Letra en Mayúscula",
             "text_case_help": "Cambiar mayúsculas/minúsculas",
+            "moved_singular": "\"%@\" movido a \"%@\"",
+            "moved_plural": "%d elementos movidos a \"%@\"",
         ]
 
         if lang == .es {
