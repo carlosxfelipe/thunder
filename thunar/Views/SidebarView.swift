@@ -16,7 +16,7 @@ enum SidebarSelection: Hashable {
 struct SidebarView: View {
     @ObservedObject var fileManager: FileManagerService
     @StateObject private var volumesService = VolumesService()
-    @StateObject private var languageManager = LanguageManager.shared
+    @ObservedObject private var languageManager = LanguageManager.shared
     @State private var selection: SidebarSelection?
 
     @AppStorage("hiddenSidebarItems") private var hiddenSidebarItems: String = ""

@@ -10,7 +10,7 @@ import SwiftUI
 
 @main
 struct thunarApp: App {
-    @StateObject private var languageManager = LanguageManager.shared
+    @ObservedObject private var languageManager = LanguageManager.shared
 
     var body: some Scene {
         WindowGroup {

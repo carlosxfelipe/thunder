@@ -10,7 +10,7 @@ import Combine
 import Foundation
 import SwiftUI
 
-enum CompressionFormat: String, CaseIterable, Identifiable {
+enum CompressionFormat: String, CaseIterable, Identifiable, Sendable {
     case zip = "ZIP (.zip)"
     case tarGz = "TAR GZ (.tar.gz)"
     case tarBz2 = "TAR BZ2 (.tar.bz2)"
@@ -446,19 +446,24 @@ class FileManagerService: ObservableObject {
         isProcessing = true
         postStatus(String(format: languageManager.local("compressing"), name), autoClear: false)
 
+        let formatExt = format.extensionString
+        let formatValue = format
+
         Task.detached {
             var finalName = name
-            if !finalName.lowercased().hasSuffix(".\(format.extensionString)") {
-                finalName += ".\(format.extensionString)"
+            if !finalName.lowercased().hasSuffix(".\(formatExt)") {
+                finalName += ".\(formatExt)"
             }
             var targetURL = currentDir.appendingPathComponent(finalName)
 
             if FileManager.default.fileExists(atPath: targetURL.path) {
-                let response = await MainActor.run { [finalName = finalName, targetURL = targetURL] in
+                let currentFinalName = finalName
+                let currentTargetURL = targetURL
+                let response = await MainActor.run {
                     let alert = NSAlert()
                     alert.messageText = self.languageManager.local("item_exists_title")
-                    alert.informativeText = String(format: self.languageManager.local("item_exists_message"), finalName)
-                    alert.icon = NSWorkspace.shared.icon(forFile: targetURL.path)
+                    alert.informativeText = String(format: self.languageManager.local("item_exists_message"), currentFinalName)
+                    alert.icon = NSWorkspace.shared.icon(forFile: currentTargetURL.path)
                     alert.addButton(withTitle: self.languageManager.local("replace"))
                     alert.addButton(withTitle: self.languageManager.local("keep_both"))
                     alert.addButton(withTitle: self.languageManager.local("skip"))
@@ -478,9 +483,9 @@ class FileManagerService: ObservableObject {
                     }
                 } else if response == .alertSecondButtonReturn {
                     var counter = 2
-                    let base = finalName.replacingOccurrences(of: ".\(format.extensionString)", with: "")
+                    let base = finalName.replacingOccurrences(of: ".\(formatExt)", with: "")
                     while FileManager.default.fileExists(atPath: targetURL.path) {
-                        finalName = "\(base) \(counter).\(format.extensionString)"
+                        finalName = "\(base) \(counter).\(formatExt)"
                         targetURL = currentDir.appendingPathComponent(finalName)
                         counter += 1
                     }
@@ -493,31 +498,32 @@ class FileManagerService: ObservableObject {
                 }
             }
 
+            let finalTargetURL = targetURL
             let process = Process()
             process.currentDirectoryURL = currentDir
 
-            if format == .zip {
+            if formatValue == .zip {
                 if items.count == 1 {
                     process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
-                    process.arguments = ["-c", "-k", "--sequesterRsrc", "--keepParent", items.first!.url.path, targetURL.path]
+                    process.arguments = ["-c", "-k", "--sequesterRsrc", "--keepParent", items.first!.url.path, finalTargetURL.path]
                 } else {
                     process.executableURL = URL(fileURLWithPath: "/usr/bin/zip")
-                    var args = ["-q", "-r", targetURL.path]
+                    var args = ["-q", "-r", finalTargetURL.path]
                     for item in items {
                         args.append(item.url.lastPathComponent)
                     }
                     process.arguments = args
                 }
-            } else if format == .tarGz {
+            } else if formatValue == .tarGz {
                 process.executableURL = URL(fileURLWithPath: "/usr/bin/tar")
-                var args = ["-czf", targetURL.path]
+                var args = ["-czf", finalTargetURL.path]
                 for item in items {
                     args.append(item.url.lastPathComponent)
                 }
                 process.arguments = args
-            } else if format == .tarBz2 {
+            } else if formatValue == .tarBz2 {
                 process.executableURL = URL(fileURLWithPath: "/usr/bin/tar")
-                var args = ["-cjf", targetURL.path]
+                var args = ["-cjf", finalTargetURL.path]
                 for item in items {
                     args.append(item.url.lastPathComponent)
                 }
@@ -537,7 +543,7 @@ class FileManagerService: ObservableObject {
                 try? await Task.sleep(nanoseconds: 300_000_000)
                 await MainActor.run {
                     self.loadDirectory()
-                    self.postStatus(String(format: self.languageManager.local("compress_success"), targetURL.lastPathComponent))
+                    self.postStatus(String(format: self.languageManager.local("compress_success"), finalTargetURL.lastPathComponent))
                 }
             } catch {
                 await MainActor.run {

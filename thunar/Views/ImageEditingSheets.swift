@@ -175,7 +175,7 @@ struct ResizeImageSheet: View {
                 Text(LanguageManager.shared.local("percent") + " (%)").tag(ResizeUnit.percent)
             }
             .pickerStyle(.segmented)
-            .onChange(of: unit) { newUnit in
+            .onChange(of: unit) { _, newUnit in
                 updateUnits(to: newUnit)
             }
 
@@ -186,7 +186,7 @@ struct ResizeImageSheet: View {
                     TextField("", text: $newWidth)
                         .textFieldStyle(.roundedBorder)
                         .disabled(maintainAspectRatio && primaryDimension != .width)
-                        .onChange(of: newWidth) { _ in
+                        .onChange(of: newWidth) { _, _ in
                             if !maintainAspectRatio || primaryDimension == .width {
                                 syncDimensions(changedWidth: true)
                             }
@@ -201,7 +201,7 @@ struct ResizeImageSheet: View {
                     TextField("", text: $newHeight)
                         .textFieldStyle(.roundedBorder)
                         .disabled(maintainAspectRatio && primaryDimension != .height)
-                        .onChange(of: newHeight) { _ in
+                        .onChange(of: newHeight) { _, _ in
                             if !maintainAspectRatio || primaryDimension == .height {
                                 syncDimensions(changedWidth: false)
                             }

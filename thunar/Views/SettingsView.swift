@@ -14,7 +14,7 @@ struct SettingsView: View {
     @AppStorage("showFavorites") private var showFavorites: Bool = true
     @AppStorage("useLargerFolderIcons") private var useLargerFolderIcons = false
 
-    @StateObject private var languageManager = LanguageManager.shared
+    @ObservedObject private var languageManager = LanguageManager.shared
 
     private var hiddenItemsSet: Set<String> {
         Set(hiddenSidebarItems.split(separator: ",").map(String.init))

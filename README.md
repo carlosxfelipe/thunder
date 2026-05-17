@@ -13,6 +13,10 @@ Gerenciador de arquivos para macOS escrito em Swift com SwiftUI.
 - Navegação com abas
 - Modo lista e modo ícones
 - Copiar, recortar e colar
+- Renomeação inteligente e segura:
+  - Divisão vertical clara entre o nome base do arquivo e sua extensão
+  - Proteção ativa com cadeado para evitar alterações ou exclusões acidentais da extensão
+  - Formatação rápida de texto para **TUDO MAIÚSCULO**, **tudo minúsculo** ou **Primeira Letra Maiúscula**
 - Comprimir arquivos e pastas com suporte a múltiplos formatos (**ZIP**, **TAR.GZ** e **TAR.BZ2**)
 - Rotacionar e redimensionar imagens nativamente (com opção de aplicar no arquivo original ou criar uma cópia modificada)
 - Quick Look (barra de espaço)
