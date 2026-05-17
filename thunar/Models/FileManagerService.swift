@@ -375,10 +375,11 @@ class FileManagerService: ObservableObject {
     }
 
     func deleteItems(_ items: [FileItem]) {
-        guard !items.isEmpty else { return }
+        let nonProtectedItems = items.filter { !$0.isSystemProtected }
+        guard !nonProtectedItems.isEmpty else { return }
 
         var deletedCount = 0
-        for item in items {
+        for item in nonProtectedItems {
             do {
                 try fileManager.trashItem(at: item.url, resultingItemURL: nil)
                 deletedCount += 1
@@ -388,7 +389,7 @@ class FileManagerService: ObservableObject {
         }
 
         loadDirectory()
-        if deletedCount == 1, let item = items.first {
+        if deletedCount == 1, let item = nonProtectedItems.first {
             postStatus(String(format: languageManager.local("moved_to_trash_singular"), item.name))
         } else if deletedCount > 1 {
             postStatus(String(format: languageManager.local("moved_to_trash_plural"), deletedCount))
@@ -396,6 +397,7 @@ class FileManagerService: ObservableObject {
     }
 
     func permanentDeleteItem(_ item: FileItem) {
+        guard !item.isSystemProtected else { return }
         do {
             try fileManager.removeItem(at: item.url)
             loadDirectory()
@@ -406,10 +408,11 @@ class FileManagerService: ObservableObject {
     }
 
     func permanentDeleteItems(_ items: [FileItem]) {
-        guard !items.isEmpty else { return }
+        let nonProtectedItems = items.filter { !$0.isSystemProtected }
+        guard !nonProtectedItems.isEmpty else { return }
 
         var deletedCount = 0
-        for item in items {
+        for item in nonProtectedItems {
             do {
                 try fileManager.removeItem(at: item.url)
                 deletedCount += 1
@@ -419,7 +422,7 @@ class FileManagerService: ObservableObject {
         }
 
         loadDirectory()
-        if deletedCount == 1, let item = items.first {
+        if deletedCount == 1, let item = nonProtectedItems.first {
             postStatus(String(format: languageManager.local("deleted_perm_singular"), item.name))
         } else if deletedCount > 1 {
             postStatus(String(format: languageManager.local("deleted_perm_plural"), deletedCount))
@@ -677,6 +680,7 @@ class FileManagerService: ObservableObject {
     }
 
     func renameItem(_ item: FileItem, to newName: String) {
+        guard !item.isSystemProtected else { return }
         let newURL = currentDirectory.appendingPathComponent(newName)
 
         do {
@@ -690,12 +694,15 @@ class FileManagerService: ObservableObject {
 
     /// Moves files/folders to a destination directory (used by drag & drop).
     func moveItems(_ urls: [URL], to destinationDir: URL) {
-        var urlsToMove = urls
-        if urls.count == 1, let firstURL = urls.first,
+        let nonProtectedURLs = urls.filter { !isSystemProtected(url: $0) }
+        guard !nonProtectedURLs.isEmpty else { return }
+
+        var urlsToMove = nonProtectedURLs
+        if nonProtectedURLs.count == 1, let firstURL = nonProtectedURLs.first,
            selectedURLs.contains(firstURL),
            selectedURLs.count > 1
         {
-            urlsToMove = selectedURLs
+            urlsToMove = selectedURLs.filter { !isSystemProtected(url: $0) }
         }
 
         var movedCount = 0
@@ -778,10 +785,12 @@ class FileManagerService: ObservableObject {
     }
 
     func cutItems(_ items: [FileItem]) {
-        clipboardService.clipboard = (items.map { $0.url }, .cut)
-        let count = items.count
+        let nonProtectedItems = items.filter { !$0.isSystemProtected }
+        guard !nonProtectedItems.isEmpty else { return }
+        clipboardService.clipboard = (nonProtectedItems.map { $0.url }, .cut)
+        let count = nonProtectedItems.count
         if count == 1 {
-            postStatus(String(format: languageManager.local("cut_singular"), items[0].name))
+            postStatus(String(format: languageManager.local("cut_singular"), nonProtectedItems[0].name))
         } else {
             postStatus(String(format: languageManager.local("cut_plural"), count))
         }
@@ -1039,5 +1048,24 @@ class FileManagerService: ObservableObject {
 
     func isFavorite(_ url: URL) -> Bool {
         favorites.contains(url)
+    }
+
+    func isSystemProtected(url: URL) -> Bool {
+        if url.path == "/" { return true }
+        let home = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL
+        if url.standardizedFileURL == home { return true }
+
+        let parent = url.deletingLastPathComponent().standardizedFileURL
+        if parent.path == "/" {
+            let protectedFolders = [
+                "system", "library", "users", "applications",
+                "bin", "sbin", "usr", "var", "private", "etc", "tmp", "dev", "opt", "volumes", "cores",
+            ]
+            return protectedFolders.contains(url.lastPathComponent.lowercased())
+        }
+        if parent.path.lowercased() == "/users" {
+            return true
+        }
+        return false
     }
 }

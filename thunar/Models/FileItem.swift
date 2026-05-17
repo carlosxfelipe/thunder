@@ -63,4 +63,23 @@ struct FileItem: Identifiable, Hashable {
         guard let type = UTType(filenameExtension: url.pathExtension) else { return false }
         return type.conforms(to: .image)
     }
+
+    var isSystemProtected: Bool {
+        if url.path == "/" { return true }
+        let home = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL
+        if url.standardizedFileURL == home { return true }
+
+        let parent = url.deletingLastPathComponent().standardizedFileURL
+        if parent.path == "/" {
+            let protectedFolders = [
+                "system", "library", "users", "applications",
+                "bin", "sbin", "usr", "var", "private", "etc", "tmp", "dev", "opt", "volumes", "cores",
+            ]
+            return protectedFolders.contains(url.lastPathComponent.lowercased())
+        }
+        if parent.path.lowercased() == "/users" {
+            return true
+        }
+        return false
+    }
 }

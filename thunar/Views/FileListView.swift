@@ -273,10 +273,10 @@ struct FileListView: View {
                 self.selectionAnchorID = nil
             }
         }
-        .onChange(of: selectedFileIDs) { newValue in
+        .onChange(of: selectedFileIDs) { _, newValue in
             fileManager.selectedURLs = sortedFiles.filter { newValue.contains($0.id) }.map(\.url)
         }
-        .onChange(of: sortedFiles) { newValue in
+        .onChange(of: sortedFiles) { _, newValue in
             fileManager.selectedURLs = newValue.filter { selectedFileIDs.contains($0.id) }.map(\.url)
         }
         .onChange(of: fileManager.currentDirectory) {
@@ -462,6 +462,7 @@ struct FileListView: View {
                     Button(action: { editingItem = item }) {
                         Label(languageManager.local("rename"), systemImage: "pencil")
                     }
+                    .disabled(item.isSystemProtected)
                 }
                 Button(action: {
                     let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
@@ -505,6 +506,7 @@ struct FileListView: View {
                 }) {
                     Label(languageManager.local("cut"), systemImage: "scissors")
                 }
+                .disabled(contextItems(for: item).contains(where: \.isSystemProtected))
                 Divider()
                 Button(action: {
                     let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
@@ -554,11 +556,13 @@ struct FileListView: View {
                 }) {
                     Label(languageManager.local("move_to_trash"), systemImage: "trash")
                 }
+                .disabled(contextItems(for: item).contains(where: \.isSystemProtected))
                 Button(role: .destructive, action: {
                     itemsToDelete = contextItems(for: item)
                 }) {
                     Label(languageManager.local("delete_permanently"), systemImage: "xmark.bin")
                 }
+                .disabled(contextItems(for: item).contains(where: \.isSystemProtected))
             }
         } primaryAction: { items in
             let selectedItems = fileManager.files.filter { items.contains($0.id) }
@@ -804,6 +808,7 @@ struct FileListView: View {
             Button(action: { editingItem = item }) {
                 Label(languageManager.local("rename"), systemImage: "pencil")
             }
+            .disabled(item.isSystemProtected)
         }
         Button(action: {
             let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
@@ -847,6 +852,7 @@ struct FileListView: View {
         }) {
             Label(languageManager.local("cut"), systemImage: "scissors")
         }
+        .disabled(contextItems(for: item).contains(where: \.isSystemProtected))
         Divider()
         Button(action: {
             let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
@@ -896,11 +902,13 @@ struct FileListView: View {
         }) {
             Label(languageManager.local("move_to_trash"), systemImage: "trash")
         }
+        .disabled(contextItems(for: item).contains(where: \.isSystemProtected))
         Button(role: .destructive, action: {
             itemsToDelete = contextItems(for: item)
         }) {
             Label(languageManager.local("delete_permanently"), systemImage: "xmark.bin")
         }
+        .disabled(contextItems(for: item).contains(where: \.isSystemProtected))
     }
 
     private func showInfoPanels(for items: [FileItem]) {
