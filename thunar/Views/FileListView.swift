@@ -74,11 +74,11 @@ struct FileListView: View {
     }
 
     private var iconTextSize: CGFloat {
-        11 * (iconSize / 56.0)
+        useLargerFolderIcons ? 12 : 11
     }
 
     private var iconLocationTextSize: CGFloat {
-        9 * (iconSize / 56.0)
+        useLargerFolderIcons ? 10 : 9
     }
 
     private var iconGridMinimum: CGFloat {
