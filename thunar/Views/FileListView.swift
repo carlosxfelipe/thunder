@@ -34,12 +34,12 @@ struct FileListView: View {
     @State private var gridWidth: CGFloat = 600
     @State private var sortOrder = [KeyPathComparator(\FileItem.name)]
     @State private var itemsToDelete: [FileItem] = []
-    @State private var infoItem: FileItem?
     @State private var rotatingItem: FileItem?
     @State private var resizingItem: FileItem?
     @State private var previewURL: URL?
     @State private var selectionRectStart: CGPoint? = nil
     @State private var selectionRectEnd: CGPoint? = nil
+    @State private var initialSelectionForDrag: Set<UUID> = []
     @State private var searchText = ""
     @FocusState private var isListFocused: Bool
     @FocusState private var isSearchFocused: Bool
@@ -226,15 +226,6 @@ struct FileListView: View {
             .onAppear {
                 newItemName = item.name
             }
-        }
-        .sheet(item: $infoItem) { item in
-            ItemInfoSheet(
-                item: item,
-                isPresented: Binding(
-                    get: { infoItem != nil },
-                    set: { if !$0 { infoItem = nil } }
-                )
-            )
         }
         .sheet(item: $rotatingItem) { item in
             RotateImageSheet(
@@ -530,7 +521,10 @@ struct FileListView: View {
                 Button(action: { editingItem = item }) {
                     Label(languageManager.local("rename"), systemImage: "pencil")
                 }
-                Button(action: { infoItem = item }) {
+                Button(action: { 
+                    let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+                    showInfoPanels(for: items) 
+                }) {
                     Label(languageManager.local("get_info"), systemImage: "info.circle")
                 }
                 if item.isImage {
@@ -662,6 +656,7 @@ struct FileListView: View {
                                 .onChanged { value in
                                     if selectionRectStart == nil {
                                         selectionRectStart = value.startLocation
+                                        initialSelectionForDrag = selectedFileIDs
                                     }
                                     selectionRectEnd = value.location
                                     updateSelectionFromMarquee()
@@ -713,13 +708,9 @@ struct FileListView: View {
                                 fileManager.openItem(item)
                             }
                             .simultaneousGesture(
-                                TapGesture().modifiers(.shift).onEnded {
-                                    selectRange(to: item)
-                                }
-                            )
-                            .simultaneousGesture(
                                 TapGesture().onEnded {
-                                    if NSApp.currentEvent?.modifierFlags.contains(.command) == true {
+                                    let flags = NSApp.currentEvent?.modifierFlags ?? []
+                                    if flags.contains(.command) || flags.contains(.shift) {
                                         if selectedFileIDs.contains(item.id) {
                                             selectedFileIDs.remove(item.id)
                                         } else {
@@ -742,7 +733,10 @@ struct FileListView: View {
                                 Button(action: { editingItem = item }) {
                                     Label(languageManager.local("rename"), systemImage: "pencil")
                                 }
-                                Button(action: { infoItem = item }) {
+                                Button(action: { 
+                                    let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+                                    showInfoPanels(for: items) 
+                                }) {
                                     Label(languageManager.local("get_info"), systemImage: "info.circle")
                                 }
                                 if item.isImage {
@@ -879,37 +873,33 @@ struct FileListView: View {
         }
     }
 
-    private func selectRange(to item: FileItem) {
-        if let anchorId = selectionAnchorID ?? lastSelectedID,
-           let anchorIndex = sortedFiles.firstIndex(where: { $0.id == anchorId }),
-           let currentIndex = sortedFiles.firstIndex(where: { $0.id == item.id })
-        {
-            let columnsCount = max(1, Int((gridWidth - 16) / 116))
-            let startRow = anchorIndex / columnsCount
-            let startCol = anchorIndex % columnsCount
-            let endRow = currentIndex / columnsCount
-            let endCol = currentIndex % columnsCount
-
-            let minRow = min(startRow, endRow)
-            let maxRow = max(startRow, endRow)
-            let minCol = min(startCol, endCol)
-            let maxCol = max(startCol, endCol)
-
-            var boxIDs: Set<UUID> = []
-            for r in minRow ... maxRow {
-                for c in minCol ... maxCol {
-                    let idx = r * columnsCount + c
-                    if idx >= 0, idx < sortedFiles.count {
-                        boxIDs.insert(sortedFiles[idx].id)
-                    }
-                }
+    private func showInfoPanels(for items: [FileItem]) {
+        for (index, item) in items.enumerated() {
+            let panel = NSPanel(
+                contentRect: NSRect(x: 0, y: 0, width: 460, height: 400),
+                styleMask: [.titled, .closable, .utilityWindow, .nonactivatingPanel],
+                backing: .buffered,
+                defer: false
+            )
+            panel.title = languageManager.local("get_info") + " - " + item.name
+            
+            let closeAction: () -> Void = { [weak panel] in
+                panel?.close()
             }
-            selectedFileIDs = boxIDs
-        } else {
-            selectedFileIDs = [item.id]
-            selectionAnchorID = item.id
+            
+            let view = ItemInfoSheet(item: item, onClose: closeAction)
+            panel.contentView = NSHostingView(rootView: view)
+            
+            let offset = CGFloat(index * 20)
+            if let window = NSApp.keyWindow {
+                let point = CGPoint(x: window.frame.minX + 50 + offset, y: window.frame.maxY - 50 - offset)
+                panel.setFrameTopLeftPoint(point)
+            } else {
+                panel.center()
+            }
+            
+            panel.makeKeyAndOrderFront(nil)
         }
-        lastSelectedID = item.id
     }
 
     private func updateSelectionFromMarquee() {
@@ -920,8 +910,11 @@ struct FileListView: View {
         let minY = min(start.y, end.y)
         let maxY = max(start.y, end.y)
 
-        let columnsCount = max(1, Int((gridWidth - 16) / 116))
-        let itemSize: CGFloat = 116 // Estimated item size including padding/spacing
+        let availableWidth = max(0, gridWidth - 32)
+        let columnsCount = max(1, iconColumnsCount)
+        let spacing = iconGridSpacing
+        let actualColumnWidth = (availableWidth - CGFloat(columnsCount - 1) * spacing) / CGFloat(columnsCount)
+        let estimatedRowHeight: CGFloat = 110 // Estimated height for icon + text
 
         var newSelection: Set<UUID> = []
 
@@ -929,10 +922,11 @@ struct FileListView: View {
             let row = index / columnsCount
             let col = index % columnsCount
 
-            let itemX = CGFloat(col) * itemSize + 16
-            let itemY = CGFloat(row) * itemSize + 16
+            let cellCenterX = 16 + CGFloat(col) * (actualColumnWidth + spacing) + actualColumnWidth / 2
+            let cellTopY = 16 + CGFloat(row) * (estimatedRowHeight + spacing)
 
-            let itemRect = CGRect(x: itemX, y: itemY, width: 100, height: 100)
+            let hitboxWidth = iconTextWidth
+            let itemRect = CGRect(x: cellCenterX - hitboxWidth / 2, y: cellTopY, width: hitboxWidth, height: estimatedRowHeight)
             let marqueeRect = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
 
             if itemRect.intersects(marqueeRect) {
@@ -940,7 +934,11 @@ struct FileListView: View {
             }
         }
 
-        selectedFileIDs = newSelection
+        if NSApp.currentEvent?.modifierFlags.contains(.command) == true || NSApp.currentEvent?.modifierFlags.contains(.shift) == true {
+            selectedFileIDs = initialSelectionForDrag.union(newSelection)
+        } else {
+            selectedFileIDs = newSelection
+        }
     }
 
     private func contextItems(for item: FileItem) -> [FileItem] {
@@ -1024,7 +1022,7 @@ struct CreateFileSheet: View {
 
 struct ItemInfoSheet: View {
     let item: FileItem
-    @Binding var isPresented: Bool
+    var onClose: (() -> Void)? = nil
     @ObservedObject private var languageManager = LanguageManager.shared
 
     @State private var totalSize: Int64?
@@ -1067,7 +1065,7 @@ struct ItemInfoSheet: View {
             HStack {
                 Spacer()
                 Button(languageManager.local("close")) {
-                    isPresented = false
+                    onClose?()
                 }
                 .keyboardShortcut(.cancelAction)
             }
