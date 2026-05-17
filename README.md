@@ -12,7 +12,9 @@ Gerenciador de arquivos para macOS escrito em Swift com SwiftUI.
 
 - Navegação com abas
 - Modo lista e modo ícones
-- Copiar, recortar, colar e comprimir
+- Copiar, recortar e colar
+- Comprimir arquivos e pastas com suporte a múltiplos formatos (**ZIP**, **TAR.GZ** e **TAR.BZ2**)
+- Rotacionar e redimensionar imagens nativamente (com opção de aplicar no arquivo original ou criar uma cópia modificada)
 - Quick Look (barra de espaço)
 - Etiquetas coloridas (compatível com Finder)
 - Mostrar/ocultar arquivos ocultos
@@ -89,6 +91,7 @@ Depois do reset, adicione o `Thunder` novamente em **Acesso Total ao Disco**.
 | Cmd+C | Copiar |
 | Cmd+X | Recortar |
 | Cmd+V | Colar |
+| Cmd+A | Selecionar tudo |
 | Cmd+T | Nova aba |
 | Cmd+W | Fechar aba |
 | Ctrl+Tab | Próxima aba |

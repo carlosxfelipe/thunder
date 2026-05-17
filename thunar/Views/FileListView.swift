@@ -223,6 +223,12 @@ struct FileListView: View {
                 }) { EmptyView() }.keyboardShortcut("c", modifiers: .command)
 
                 Button(action: {
+                    if !isSearchFocused, !isAnySheetPresented {
+                        selectedFileIDs = Set(sortedFiles.map { $0.id })
+                    }
+                }) { EmptyView() }.keyboardShortcut("a", modifiers: .command)
+
+                Button(action: {
                     let items = sortedFiles.filter { selectedFileIDs.contains($0.id) }
                     if !items.isEmpty { fileManager.cutItems(items) }
                 }) { EmptyView() }.keyboardShortcut("x", modifiers: .command)
