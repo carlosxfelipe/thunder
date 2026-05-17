@@ -10,6 +10,21 @@ import Combine
 import Foundation
 import SwiftUI
 
+enum CompressionFormat: String, CaseIterable, Identifiable {
+    case zip = "ZIP (.zip)"
+    case tarGz = "TAR GZ (.tar.gz)"
+    case tarBz2 = "TAR BZ2 (.tar.bz2)"
+
+    var id: String { rawValue }
+    var extensionString: String {
+        switch self {
+        case .zip: return "zip"
+        case .tarGz: return "tar.gz"
+        case .tarBz2: return "tar.bz2"
+        }
+    }
+}
+
 @MainActor
 class FileManagerService: ObservableObject {
     @Published var currentDirectory: URL
@@ -413,28 +428,31 @@ class FileManagerService: ObservableObject {
     func openItem(_ item: FileItem) {
         if item.isDirectory {
             navigateTo(item.url)
-        } else if item.url.pathExtension.lowercased() == "zip" {
-            extractZipItem(item)
+        } else if isSupportedArchive(item) {
+            extractArchiveItem(item)
         } else {
             NSWorkspace.shared.open(item.url)
         }
     }
 
-    func compressItem(_ item: FileItem) {
+    func compressItems(_ items: [FileItem], to name: String, format: CompressionFormat) {
         let currentDir = currentDirectory
         isProcessing = true
-        postStatus(String(format: languageManager.local("compressing"), item.name), autoClear: false)
+        postStatus(String(format: languageManager.local("compressing"), name), autoClear: false)
 
         Task.detached {
-            var zipName = item.name + ".zip"
-            var zipURL = currentDir.appendingPathComponent(zipName)
+            var finalName = name
+            if !finalName.lowercased().hasSuffix(".\(format.extensionString)") {
+                finalName += ".\(format.extensionString)"
+            }
+            var targetURL = currentDir.appendingPathComponent(finalName)
 
-            if FileManager.default.fileExists(atPath: zipURL.path) {
-                let response = await MainActor.run { [zipName = zipName, zipURL = zipURL] in
+            if FileManager.default.fileExists(atPath: targetURL.path) {
+                let response = await MainActor.run { [finalName = finalName, targetURL = targetURL] in
                     let alert = NSAlert()
                     alert.messageText = self.languageManager.local("item_exists_title")
-                    alert.informativeText = String(format: self.languageManager.local("item_exists_message"), zipName)
-                    alert.icon = NSWorkspace.shared.icon(forFile: zipURL.path)
+                    alert.informativeText = String(format: self.languageManager.local("item_exists_message"), finalName)
+                    alert.icon = NSWorkspace.shared.icon(forFile: targetURL.path)
                     alert.addButton(withTitle: self.languageManager.local("replace"))
                     alert.addButton(withTitle: self.languageManager.local("keep_both"))
                     alert.addButton(withTitle: self.languageManager.local("skip"))
@@ -443,7 +461,7 @@ class FileManagerService: ObservableObject {
 
                 if response == .alertFirstButtonReturn {
                     do {
-                        try FileManager.default.removeItem(at: zipURL)
+                        try FileManager.default.removeItem(at: targetURL)
                     } catch {
                         await MainActor.run {
                             self.isProcessing = false
@@ -454,9 +472,10 @@ class FileManagerService: ObservableObject {
                     }
                 } else if response == .alertSecondButtonReturn {
                     var counter = 2
-                    while FileManager.default.fileExists(atPath: zipURL.path) {
-                        zipName = "\(item.name) \(counter).zip"
-                        zipURL = currentDir.appendingPathComponent(zipName)
+                    let base = finalName.replacingOccurrences(of: ".\(format.extensionString)", with: "")
+                    while FileManager.default.fileExists(atPath: targetURL.path) {
+                        finalName = "\(base) \(counter).\(format.extensionString)"
+                        targetURL = currentDir.appendingPathComponent(finalName)
                         counter += 1
                     }
                 } else {
@@ -469,8 +488,35 @@ class FileManagerService: ObservableObject {
             }
 
             let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
-            process.arguments = ["-c", "-k", "--sequesterRsrc", "--keepParent", item.url.path, zipURL.path]
+            process.currentDirectoryURL = currentDir
+
+            if format == .zip {
+                if items.count == 1 {
+                    process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
+                    process.arguments = ["-c", "-k", "--sequesterRsrc", "--keepParent", items.first!.url.path, targetURL.path]
+                } else {
+                    process.executableURL = URL(fileURLWithPath: "/usr/bin/zip")
+                    var args = ["-q", "-r", targetURL.path]
+                    for item in items {
+                        args.append(item.url.lastPathComponent)
+                    }
+                    process.arguments = args
+                }
+            } else if format == .tarGz {
+                process.executableURL = URL(fileURLWithPath: "/usr/bin/tar")
+                var args = ["-czf", targetURL.path]
+                for item in items {
+                    args.append(item.url.lastPathComponent)
+                }
+                process.arguments = args
+            } else if format == .tarBz2 {
+                process.executableURL = URL(fileURLWithPath: "/usr/bin/tar")
+                var args = ["-cjf", targetURL.path]
+                for item in items {
+                    args.append(item.url.lastPathComponent)
+                }
+                process.arguments = args
+            }
 
             do {
                 try process.run()
@@ -479,7 +525,13 @@ class FileManagerService: ObservableObject {
                 await MainActor.run {
                     self.isProcessing = false
                     self.loadDirectory()
-                    self.postStatus(String(format: self.languageManager.local("compress_success"), item.name))
+                }
+
+                // Wait a brief moment for APFS filesystem catalog to sync, then refresh again to be absolutely sure
+                try? await Task.sleep(nanoseconds: 300_000_000)
+                await MainActor.run {
+                    self.loadDirectory()
+                    self.postStatus(String(format: self.languageManager.local("compress_success"), targetURL.lastPathComponent))
                 }
             } catch {
                 await MainActor.run {
@@ -491,13 +543,34 @@ class FileManagerService: ObservableObject {
         }
     }
 
-    func extractZipItem(_ item: FileItem) {
+    func isSupportedArchive(_ item: FileItem) -> Bool {
+        let ext = item.url.pathExtension.lowercased()
+        if ext == "zip" || ext == "tar" || ext == "tgz" || ext == "tbz2" {
+            return true
+        }
+        let path = item.url.path.lowercased()
+        if path.hasSuffix(".tar.gz") || path.hasSuffix(".tar.bz2") {
+            return true
+        }
+        return false
+    }
+
+    func extractArchiveItem(_ item: FileItem) {
         let currentDir = currentDirectory
         isProcessing = true
         postStatus(String(format: languageManager.local("extracting"), item.name), autoClear: false)
 
         Task.detached {
-            let baseName = item.url.deletingPathExtension().lastPathComponent
+            var baseName = item.url.lastPathComponent
+            let lowercasedName = baseName.lowercased()
+            if lowercasedName.hasSuffix(".tar.gz") {
+                baseName = String(baseName.dropLast(7))
+            } else if lowercasedName.hasSuffix(".tar.bz2") {
+                baseName = String(baseName.dropLast(8))
+            } else {
+                baseName = item.url.deletingPathExtension().lastPathComponent
+            }
+
             var destinationURL = currentDir.appendingPathComponent(baseName, isDirectory: true)
 
             if FileManager.default.fileExists(atPath: destinationURL.path) {
@@ -542,14 +615,26 @@ class FileManagerService: ObservableObject {
                 try FileManager.default.createDirectory(at: destinationURL, withIntermediateDirectories: false)
 
                 let process = Process()
-                process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
-                process.arguments = ["-x", "-k", item.url.path, destinationURL.path]
+                if item.url.pathExtension.lowercased() == "zip" {
+                    process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
+                    process.arguments = ["-x", "-k", item.url.path, destinationURL.path]
+                } else {
+                    process.executableURL = URL(fileURLWithPath: "/usr/bin/tar")
+                    process.arguments = ["-xf", item.url.path, "-C", destinationURL.path]
+                }
+
                 try process.run()
                 process.waitUntilExit()
 
                 if process.terminationStatus == 0 {
                     await MainActor.run {
                         self.isProcessing = false
+                        self.loadDirectory()
+                    }
+
+                    // Wait a brief moment for APFS filesystem catalog to sync, then refresh again to be absolutely sure
+                    try? await Task.sleep(nanoseconds: 300_000_000)
+                    await MainActor.run {
                         self.loadDirectory()
                         self.postStatus(String(format: self.languageManager.local("extract_success"), item.name))
                     }

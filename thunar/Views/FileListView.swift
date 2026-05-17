@@ -41,6 +41,8 @@ struct FileListView: View {
     @State private var selectionRectEnd: CGPoint? = nil
     @State private var initialSelectionForDrag: Set<UUID> = []
     @State private var searchText = ""
+    @State private var itemsToCompress: [FileItem] = []
+    @State private var showingCompressSheet = false
     @FocusState private var isListFocused: Bool
     @FocusState private var isSearchFocused: Bool
 
@@ -48,8 +50,23 @@ struct FileListView: View {
         fileManager.files.sorted(using: sortOrder)
     }
 
+    private var itemCountText: String {
+        let count = sortedFiles.count
+        let text = count == 1 ? languageManager.local("item_count_singular") : languageManager.local("item_count_plural")
+        return "\(count) \(text)"
+    }
+
     private var isSearching: Bool {
         !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var isAnySheetPresented: Bool {
+        showingCreateFolder ||
+            showingCreateFile ||
+            editingItem != nil ||
+            rotatingItem != nil ||
+            resizingItem != nil ||
+            showingCompressSheet
     }
 
     private var iconSize: CGFloat {
@@ -173,7 +190,7 @@ struct FileListView: View {
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                     Spacer()
-                    Text("\(sortedFiles.count) \(sortedFiles.count == 1 ? languageManager.local("item_count_singular") : languageManager.local("item_count_plural"))")
+                    Text(itemCountText)
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                 }
@@ -196,93 +213,7 @@ struct FileListView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingCreateFolder) {
-            CreateFolderSheet(isPresented: $showingCreateFolder, folderName: $newFolderName) {
-                fileManager.createFolder(name: newFolderName)
-                newFolderName = ""
-            }
-        }
-        .sheet(isPresented: $showingCreateFile) {
-            CreateFileSheet(isPresented: $showingCreateFile, fileName: $newFileName) {
-                fileManager.createFile(name: newFileName)
-                newFileName = ""
-            }
-        }
-        .sheet(item: $editingItem) { item in
-            RenameSheet(
-                item: item,
-                fileName: $newItemName,
-                isPresented: Binding(
-                    get: { editingItem != nil },
-                    set: { if !$0 { editingItem = nil } }
-                )
-            ) {
-                if !newItemName.isEmpty && newItemName != item.name {
-                    fileManager.renameItem(item, to: newItemName)
-                }
-                editingItem = nil
-                newItemName = ""
-            }
-            .onAppear {
-                newItemName = item.name
-            }
-        }
-        .sheet(item: $rotatingItem) { item in
-            RotateImageSheet(
-                isPresented: Binding(
-                    get: { rotatingItem != nil },
-                    set: { if !$0 { rotatingItem = nil } }
-                ),
-                item: item,
-                onApply: {
-                    fileManager.loadDirectory()
-                }
-            )
-        }
-        .sheet(item: $resizingItem) { item in
-            ResizeImageSheet(
-                isPresented: Binding(
-                    get: { resizingItem != nil },
-                    set: { if !$0 { resizingItem = nil } }
-                ),
-                item: item,
-                onApply: {
-                    fileManager.loadDirectory()
-                }
-            )
-        }
-        .alert(languageManager.local("error"), isPresented: Binding<Bool>(
-            get: { fileManager.errorMessage != nil },
-            set: { if !$0 { fileManager.errorMessage = nil } }
-        )) {
-            Button(languageManager.local("ok"), role: .cancel) {}
-        } message: {
-            if let errorMessage = fileManager.errorMessage {
-                Text(errorMessage)
-            }
-        }
-        .confirmationDialog(
-            languageManager.local("confirm_delete"),
-            isPresented: Binding(
-                get: { !itemsToDelete.isEmpty },
-                set: { if !$0 { itemsToDelete = [] } }
-            ),
-            titleVisibility: .visible
-        ) {
-            Button(languageManager.local("delete"), role: .destructive) {
-                fileManager.permanentDeleteItems(itemsToDelete)
-                itemsToDelete = []
-            }
-            Button(languageManager.local("cancel"), role: .cancel) {
-                itemsToDelete = []
-            }
-        } message: {
-            if itemsToDelete.count == 1, let item = itemsToDelete.first {
-                Text(String(format: languageManager.local("delete_warning_singular"), item.name))
-            } else {
-                Text(String(format: languageManager.local("delete_warning_plural"), itemsToDelete.count))
-            }
-        }
+        .background(sheetManager)
         .quickLookPreview($previewURL)
         .background(
             Group {
@@ -331,7 +262,7 @@ struct FileListView: View {
             searchText = ""
         }
         .onKeyPress { keyPress in
-            if editingItem != nil || showingCreateFolder || showingCreateFile || rotatingItem != nil || resizingItem != nil { return .ignored }
+            if isAnySheetPresented { return .ignored }
 
             if keyPress.key == .escape, !searchText.isEmpty {
                 searchText = ""
@@ -521,9 +452,9 @@ struct FileListView: View {
                 Button(action: { editingItem = item }) {
                     Label(languageManager.local("rename"), systemImage: "pencil")
                 }
-                Button(action: { 
+                Button(action: {
                     let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
-                    showInfoPanels(for: items) 
+                    showInfoPanels(for: items)
                 }) {
                     Label(languageManager.local("get_info"), systemImage: "info.circle")
                 }
@@ -564,7 +495,11 @@ struct FileListView: View {
                     Label(languageManager.local("cut"), systemImage: "scissors")
                 }
                 Divider()
-                Button(action: { fileManager.compressItem(item) }) {
+                Button(action: {
+                    let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+                    itemsToCompress = items
+                    showingCompressSheet = true
+                }) {
                     Label(languageManager.local("compress"), systemImage: "archivebox")
                 }
                 Divider()
@@ -733,9 +668,9 @@ struct FileListView: View {
                                 Button(action: { editingItem = item }) {
                                     Label(languageManager.local("rename"), systemImage: "pencil")
                                 }
-                                Button(action: { 
+                                Button(action: {
                                     let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
-                                    showInfoPanels(for: items) 
+                                    showInfoPanels(for: items)
                                 }) {
                                     Label(languageManager.local("get_info"), systemImage: "info.circle")
                                 }
@@ -776,7 +711,11 @@ struct FileListView: View {
                                     Label(languageManager.local("cut"), systemImage: "scissors")
                                 }
                                 Divider()
-                                Button(action: { fileManager.compressItem(item) }) {
+                                Button(action: {
+                                    let items = selectedFileIDs.contains(item.id) ? sortedFiles.filter { selectedFileIDs.contains($0.id) } : [item]
+                                    itemsToCompress = items
+                                    showingCompressSheet = true
+                                }) {
                                     Label(languageManager.local("compress"), systemImage: "archivebox")
                                 }
                                 Divider()
@@ -882,14 +821,14 @@ struct FileListView: View {
                 defer: false
             )
             panel.title = languageManager.local("get_info") + " - " + item.name
-            
+
             let closeAction: () -> Void = { [weak panel] in
                 panel?.close()
             }
-            
+
             let view = ItemInfoSheet(item: item, onClose: closeAction)
             panel.contentView = NSHostingView(rootView: view)
-            
+
             let offset = CGFloat(index * 20)
             if let window = NSApp.keyWindow {
                 let point = CGPoint(x: window.frame.minX + 50 + offset, y: window.frame.maxY - 50 - offset)
@@ -897,7 +836,7 @@ struct FileListView: View {
             } else {
                 panel.center()
             }
-            
+
             panel.makeKeyAndOrderFront(nil)
         }
     }
@@ -947,6 +886,105 @@ struct FileListView: View {
         }
 
         return [item]
+    }
+
+    @ViewBuilder
+    private var sheetManager: some View {
+        Color.clear
+            .sheet(isPresented: $showingCreateFolder) {
+                CreateFolderSheet(isPresented: $showingCreateFolder, folderName: $newFolderName) {
+                    fileManager.createFolder(name: newFolderName)
+                    newFolderName = ""
+                }
+            }
+            .sheet(isPresented: $showingCreateFile) {
+                CreateFileSheet(isPresented: $showingCreateFile, fileName: $newFileName) {
+                    fileManager.createFile(name: newFileName)
+                    newFileName = ""
+                }
+            }
+            .sheet(item: $editingItem) { item in
+                RenameSheet(
+                    item: item,
+                    fileName: $newItemName,
+                    isPresented: Binding(
+                        get: { editingItem != nil },
+                        set: { if !$0 { editingItem = nil } }
+                    )
+                ) {
+                    if !newItemName.isEmpty && newItemName != item.name {
+                        fileManager.renameItem(item, to: newItemName)
+                    }
+                    editingItem = nil
+                    newItemName = ""
+                }
+                .onAppear {
+                    newItemName = item.name
+                }
+            }
+            .sheet(item: $rotatingItem) { item in
+                RotateImageSheet(
+                    isPresented: Binding(
+                        get: { rotatingItem != nil },
+                        set: { if !$0 { rotatingItem = nil } }
+                    ),
+                    item: item,
+                    onApply: {
+                        fileManager.loadDirectory()
+                    }
+                )
+            }
+            .sheet(item: $resizingItem) { item in
+                ResizeImageSheet(
+                    isPresented: Binding(
+                        get: { resizingItem != nil },
+                        set: { if !$0 { resizingItem = nil } }
+                    ),
+                    item: item,
+                    onApply: { fileManager.loadDirectory() }
+                )
+            }
+            .sheet(isPresented: $showingCompressSheet) {
+                CompressSheet(
+                    isPresented: $showingCompressSheet,
+                    items: itemsToCompress,
+                    onCompress: { (name: String, format: CompressionFormat) in
+                        fileManager.compressItems(itemsToCompress, to: name, format: format)
+                    }
+                )
+            }
+            .alert(languageManager.local("error"), isPresented: Binding<Bool>(
+                get: { fileManager.errorMessage != nil },
+                set: { if !$0 { fileManager.errorMessage = nil } }
+            )) {
+                Button(languageManager.local("ok"), role: .cancel) {}
+            } message: {
+                if let errorMessage = fileManager.errorMessage {
+                    Text(errorMessage)
+                }
+            }
+            .confirmationDialog(
+                languageManager.local("confirm_delete"),
+                isPresented: Binding(
+                    get: { !itemsToDelete.isEmpty },
+                    set: { if !$0 { itemsToDelete = [] } }
+                ),
+                titleVisibility: .visible
+            ) {
+                Button(languageManager.local("delete"), role: .destructive) {
+                    fileManager.permanentDeleteItems(itemsToDelete)
+                    itemsToDelete = []
+                }
+                Button(languageManager.local("cancel"), role: .cancel) {
+                    itemsToDelete = []
+                }
+            } message: {
+                if itemsToDelete.count == 1, let item = itemsToDelete.first {
+                    Text(String(format: languageManager.local("delete_warning_singular"), item.name))
+                } else {
+                    Text(String(format: languageManager.local("delete_warning_plural"), itemsToDelete.count))
+                }
+            }
     }
 }
 
@@ -1274,6 +1312,58 @@ struct RenameSheet: View {
         }
         .padding(24)
         .frame(width: 300)
+    }
+}
+
+struct CompressSheet: View {
+    @Binding var isPresented: Bool
+    let items: [FileItem]
+    let onCompress: (String, CompressionFormat) -> Void
+    @ObservedObject private var languageManager = LanguageManager.shared
+
+    @State private var archiveName: String = ""
+    @State private var format: CompressionFormat = .zip
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(languageManager.local("compress_items"))
+                .font(.headline)
+
+            TextField(languageManager.local("archive_name"), text: $archiveName)
+                .textFieldStyle(.roundedBorder)
+
+            Picker(languageManager.local("format"), selection: $format) {
+                ForEach(CompressionFormat.allCases) { fmt in
+                    Text(fmt.rawValue).tag(fmt)
+                }
+            }
+            .pickerStyle(.menu)
+
+            HStack {
+                Button(languageManager.local("cancel")) {
+                    isPresented = false
+                }
+                .keyboardShortcut(.cancelAction)
+
+                Spacer()
+
+                Button(languageManager.local("compress")) {
+                    onCompress(archiveName, format)
+                    isPresented = false
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(archiveName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding(24)
+        .frame(width: 350)
+        .onAppear {
+            if items.count == 1, let first = items.first {
+                archiveName = first.url.deletingPathExtension().lastPathComponent
+            } else {
+                archiveName = "Archive"
+            }
+        }
     }
 }
 
