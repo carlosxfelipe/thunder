@@ -536,7 +536,7 @@ struct FileListView: View {
                         Label(languageManager.local("resize"), systemImage: "arrow.up.backward.and.arrow.down.forward")
                     }
                 }
-                if item.isDirectory {
+                if item.isDirectory && items.count == 1 {
                     Button(action: { fileManager.openInTerminal(url: item.url) }) {
                         Label(languageManager.local("open_terminal"), systemImage: "terminal")
                     }
@@ -748,7 +748,7 @@ struct FileListView: View {
                                         Label(languageManager.local("resize"), systemImage: "arrow.up.backward.and.arrow.down.forward")
                                     }
                                 }
-                                if item.isDirectory {
+                                if item.isDirectory && (!selectedFileIDs.contains(item.id) || selectedFileIDs.count == 1) {
                                     Button(action: { fileManager.openInTerminal(url: item.url) }) {
                                         Label(languageManager.local("open_terminal"), systemImage: "terminal")
                                     }
