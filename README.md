@@ -24,6 +24,7 @@ Gerenciador de arquivos para macOS escrito em Swift com SwiftUI.
 - Etiquetas coloridas (compatível com Finder)
 - Mostrar/ocultar arquivos ocultos
 - Abrir no Terminal
+- Painel de armazenamento inteligente nos Ajustes que monitora em tempo real o espaço total, utilizado e disponível de todos os discos internos e externos conectados no Mac
 - Suporte a múltiplos idiomas (Português, Inglês e Espanhol)
 
 ## Requisitos

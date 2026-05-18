@@ -206,6 +206,12 @@ enum Translations {
             "text_case_help": [.ptBR: "Alterar maiúsculas/minúsculas", .en: "Change text case"],
             "moved_singular": [.ptBR: "\"%@\" movido para \"%@\"", .en: "\"%@\" moved to \"%@\""],
             "moved_plural": [.ptBR: "%d itens movidos para \"%@\"", .en: "%d items moved to \"%@\""],
+            "storage": [.ptBR: "Armazenamento", .en: "Storage"],
+            "storage_macintosh_hd": [.ptBR: "Macintosh HD", .en: "Macintosh HD"],
+            "storage_total": [.ptBR: "Capacidade total", .en: "Total capacity"],
+            "storage_used": [.ptBR: "Utilizado", .en: "Used"],
+            "storage_free": [.ptBR: "Disponível", .en: "Available"],
+            "storage_unavailable": [.ptBR: "Informações de armazenamento indisponíveis", .en: "Storage information unavailable"],
         ]
 
         let spanish: [String: String] = [
@@ -361,6 +367,12 @@ enum Translations {
             "text_case_help": "Cambiar mayúsculas/minúsculas",
             "moved_singular": "\"%@\" movido a \"%@\"",
             "moved_plural": "%d elementos movidos a \"%@\"",
+            "storage": "Almacenamiento",
+            "storage_macintosh_hd": "Macintosh HD",
+            "storage_total": "Capacidad total",
+            "storage_used": "Utilizado",
+            "storage_free": "Disponible",
+            "storage_unavailable": "Información de almacenamiento no disponible",
         ]
 
         if lang == .es {
