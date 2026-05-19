@@ -1192,7 +1192,9 @@ struct ItemInfoSheet: View {
                     InfoRow(label: languageManager.local("dimensions"), value: imageDimensions)
                 }
                 if let itemCount {
-                    InfoRow(label: languageManager.local("tags"), value: "\(itemCount)")
+                    let itemsKey = itemCount == 1 ? "item_count_singular" : "item_count_plural"
+                    let itemsStr = languageManager.local(itemsKey)
+                    InfoRow(label: languageManager.local("contents"), value: "\(formattedBytes(Int64(itemCount))) \(itemsStr)")
                 }
                 InfoRow(label: languageManager.local("full_path"), value: item.url.path)
             }
@@ -1222,14 +1224,25 @@ struct ItemInfoSheet: View {
         return "\(languageManager.local("file")) \(ext.uppercased())"
     }
 
+    private func formattedBytes(_ bytes: Int64) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.locale = Locale.current
+        return formatter.string(from: NSNumber(value: bytes)) ?? "\(bytes)"
+    }
+
     private var sizeText: String {
         if isCalculatingSize {
             return languageManager.local("calculating")
         }
         if let totalSize {
-            return formattedSize(totalSize)
+            let formatted = formattedSize(totalSize)
+            let bytes = formattedBytes(totalSize)
+            return "\(formatted) (\(bytes) bytes)"
         }
-        return item.formattedSize
+        let formatted = item.formattedSize
+        let bytes = formattedBytes(item.fileSize)
+        return "\(formatted) (\(bytes) bytes)"
     }
 
     private func formattedDate(_ date: Date) -> String {
@@ -1272,7 +1285,7 @@ struct ItemInfoSheet: View {
         let details = await Task.detached {
             var total: Int64 = 0
             var count = 0
-            let keys: Set<URLResourceKey> = [.isRegularFileKey, .fileAllocatedSizeKey, .totalFileAllocatedSizeKey]
+            let keys: Set<URLResourceKey> = [.isRegularFileKey, .fileSizeKey]
 
             guard let enumerator = FileManager.default.enumerator(
                 at: url,
@@ -1282,14 +1295,17 @@ struct ItemInfoSheet: View {
                 return (total, count)
             }
 
-            while let childURL = enumerator.nextObject() as? URL {
+            for case let childURL as URL in enumerator {
                 if Task.isCancelled {
                     return (total, count)
                 }
 
                 count += 1
-                let values = try? childURL.resourceValues(forKeys: keys)
-                total += Int64(values?.totalFileAllocatedSize ?? values?.fileAllocatedSize ?? 0)
+                if let values = try? childURL.resourceValues(forKeys: keys) {
+                    if values.isRegularFile == true {
+                        total += Int64(values.fileSize ?? 0)
+                    }
+                }
             }
 
             return (total, count)
