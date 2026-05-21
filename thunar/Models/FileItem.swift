@@ -19,6 +19,7 @@ struct FileItem: Identifiable, Hashable {
     let creationDate: Date
     let modificationDate: Date
     let tags: [FinderTag]
+    let isHidden: Bool
 
     nonisolated init(url: URL) {
         id = UUID()
@@ -26,13 +27,16 @@ struct FileItem: Identifiable, Hashable {
         name = url.lastPathComponent
         isDirectory = (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false
 
-        let resourceValues = try? url.resourceValues(forKeys: [.fileSizeKey, .creationDateKey, .contentModificationDateKey, .tagNamesKey])
+        let resourceValues = try? url.resourceValues(forKeys: [.fileSizeKey, .creationDateKey, .contentModificationDateKey, .tagNamesKey, .isHiddenKey])
         fileSize = Int64(resourceValues?.fileSize ?? 0)
         creationDate = resourceValues?.creationDate ?? Date()
         modificationDate = resourceValues?.contentModificationDate ?? Date()
         tags = (resourceValues?.tagNames ?? []).compactMap { name in
             FinderTag.allCases.first { $0.rawValue == name || $0.localizedPortugueseName == name }
         }
+
+        let isHiddenValue = resourceValues?.isHidden ?? false
+        isHidden = name.hasPrefix(".") || isHiddenValue
     }
 
     var icon: Image {

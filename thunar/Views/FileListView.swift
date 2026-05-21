@@ -432,6 +432,7 @@ struct FileListView: View {
                         .lineLimit(1)
                         .truncationMode(.middle)
                         .help(item.url.deletingLastPathComponent().path)
+                        .opacity(item.isHidden ? 0.45 : 1.0)
                 }
                 .width(min: 180, ideal: 260)
             }
@@ -440,6 +441,7 @@ struct FileListView: View {
                 Text(item.formattedDate)
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
+                    .opacity(item.isHidden ? 0.45 : 1.0)
             }
             .width(min: 120, max: 150)
 
@@ -447,6 +449,7 @@ struct FileListView: View {
                 Text(item.formattedSize)
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
+                    .opacity(item.isHidden ? 0.45 : 1.0)
             }
             .width(min: 80, max: 100)
         }
@@ -686,6 +689,7 @@ struct FileListView: View {
                 }
             }
         }
+        .opacity(item.isHidden ? 0.45 : 1.0)
         .onDrag {
             NSItemProvider(object: item.url as NSURL)
         }
@@ -745,6 +749,7 @@ struct FileListView: View {
                     .frame(maxWidth: iconTextWidth)
             }
         }
+        .opacity(item.isHidden ? 0.45 : 1.0)
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 8)

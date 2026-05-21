@@ -176,7 +176,7 @@ class FileManagerService: ObservableObject {
 
                 let contents = try fileManager.contentsOfDirectory(
                     at: targetURL,
-                    includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey, .creationDateKey, .contentModificationDateKey, .tagNamesKey],
+                    includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey, .creationDateKey, .contentModificationDateKey, .tagNamesKey, .isHiddenKey],
                     options: options
                 )
 
@@ -231,7 +231,7 @@ class FileManagerService: ObservableObject {
 
                 guard let enumerator = FileManager.default.enumerator(
                     at: rootURL,
-                    includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey, .creationDateKey, .contentModificationDateKey, .tagNamesKey],
+                    includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey, .creationDateKey, .contentModificationDateKey, .tagNamesKey, .isHiddenKey],
                     options: options
                 ) else {
                     return [FileItem]()
