@@ -22,6 +22,7 @@ struct FileListView: View {
     @ObservedObject private var languageManager = LanguageManager.shared
     @AppStorage("viewMode") private var viewMode: ViewMode = .list
     @AppStorage("useLargerFolderIcons") private var useLargerFolderIcons = false
+    @AppStorage("sortFoldersFirst") private var sortFoldersFirst = false
     @State private var showingCreateFolder = false
     @State private var showingCreateFile = false
     @State private var newFolderName = ""
@@ -48,7 +49,8 @@ struct FileListView: View {
     @FocusState private var isSearchFocused: Bool
 
     var sortedFiles: [FileItem] {
-        fileManager.files.sorted(using: sortOrder)
+        let sorted = fileManager.files.sorted(using: sortOrder)
+        return sortFoldersFirst ? sorted.sorted { $0.isDirectory && !$1.isDirectory } : sorted
     }
 
     private var itemCountText: String {

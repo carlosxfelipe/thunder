@@ -13,6 +13,7 @@ struct SettingsView: View {
     @AppStorage("showTags") private var showTags: Bool = true
     @AppStorage("showFavorites") private var showFavorites: Bool = true
     @AppStorage("useLargerFolderIcons") private var useLargerFolderIcons = false
+    @AppStorage("sortFoldersFirst") private var sortFoldersFirst = false
 
     @ObservedObject private var languageManager = LanguageManager.shared
 
@@ -97,6 +98,7 @@ struct SettingsView: View {
                     .pickerStyle(.menu)
 
                     Toggle(languageManager.local("larger_folder_icons"), isOn: $useLargerFolderIcons)
+                    Toggle(languageManager.local("sort_folders_first"), isOn: $sortFoldersFirst)
                 } header: {
                     Text(languageManager.local("general"))
                         .font(.body)
