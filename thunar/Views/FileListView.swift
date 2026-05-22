@@ -645,12 +645,13 @@ struct FileListView: View {
                             )
                     }
                 }
-            }
-            .onChange(of: geo.size.width) { _, newWidth in
-                gridWidth = newWidth
-            }
-            .onAppear {
-                gridWidth = geo.size.width
+                .background(
+                    GeometryReader { innerGeo in
+                        Color.clear
+                            .onAppear { gridWidth = innerGeo.size.width }
+                            .onChange(of: innerGeo.size.width) { _, w in gridWidth = w }
+                    }
+                )
             }
         }
         .contextMenu {
