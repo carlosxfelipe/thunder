@@ -48,6 +48,10 @@ class LanguageManager: ObservableObject {
 enum Translations {
     static func getText(_ key: String, for lang: AppLanguage) -> String {
         let dict: [String: [AppLanguage: String]] = [
+            "go": [.ptBR: "Ir", .en: "Go"],
+            "go_to_folder": [.ptBR: "Ir para Pasta...", .en: "Go to Folder..."],
+            "folder_not_found": [.ptBR: "Pasta não encontrada.", .en: "Folder not found."],
+            "go_button": [.ptBR: "Ir", .en: "Go"],
             "settings": [.ptBR: "Configurações", .en: "Settings"],
             "sidebar": [.ptBR: "Barra Lateral", .en: "Sidebar"],
             "general": [.ptBR: "Geral", .en: "General"],
@@ -216,6 +220,10 @@ enum Translations {
         ]
 
         let spanish: [String: String] = [
+            "go": "Ir",
+            "go_to_folder": "Ir a la carpeta...",
+            "folder_not_found": "Carpeta no encontrada.",
+            "go_button": "Ir",
             "settings": "Configuración",
             "sidebar": "Barra lateral",
             "general": "General",

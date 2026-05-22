@@ -10,6 +10,7 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var tabManager = TabManagerService()
     @ObservedObject private var languageManager = LanguageManager.shared
+    @State private var showingGoToFolder = false
 
     var body: some View {
         NavigationSplitView {
@@ -36,6 +37,12 @@ struct ContentView: View {
         // Fixes macOS sidebar/toolbar color mismatch by unifying the background
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         .frame(minWidth: 800, minHeight: 600)
+        .sheet(isPresented: $showingGoToFolder) {
+            GoToFolderSheet(isPresented: $showingGoToFolder, fileManager: currentFileManager)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .showGoToFolderDialog)) { _ in
+            showingGoToFolder = true
+        }
         .background(
             Group {
                 // Tab shortcuts
@@ -50,6 +57,9 @@ struct ContentView: View {
 
                 Button(action: { tabManager.selectPreviousTab() }) { EmptyView() }
                     .keyboardShortcut(KeyEquivalent.tab, modifiers: [.control, .shift])
+
+                Button(action: { showingGoToFolder = true }) { EmptyView() }
+                    .keyboardShortcut("g", modifiers: [.command, .shift])
             }
             .opacity(0)
         )

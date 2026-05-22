@@ -117,6 +117,7 @@ Depois do reset, adicione o `Thunder` novamente em **Acesso Total ao Disco**.
 | Shift+Clique | Seleção em bloco (modo ícones) |
 | Cmd+Clique | Seleção individual |
 | Cmd+Shift+. | Mostrar/ocultar arquivos ocultos |
+| Cmd+Shift+G | Ir para Pasta... |
 | Cmd+F | Focar no campo de busca |
 | Esc | Limpar busca / Cancelar diálogos |
 | Cmd+, | Abrir Preferências |

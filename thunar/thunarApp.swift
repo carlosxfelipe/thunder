@@ -10,6 +10,7 @@ import SwiftUI
 
 @main
 struct thunarApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @ObservedObject private var languageManager = LanguageManager.shared
 
     var body: some Scene {
@@ -21,6 +22,12 @@ struct thunarApp: App {
                 Button(languageManager.local("about_thunder")) {
                     showAboutPanel()
                 }
+            }
+            CommandMenu(languageManager.local("go")) {
+                Button(languageManager.local("go_to_folder")) {
+                    NotificationCenter.default.post(name: .showGoToFolderDialog, object: nil)
+                }
+                .keyboardShortcut("g", modifiers: [.command, .shift])
             }
         }
 
@@ -61,4 +68,30 @@ struct thunarApp: App {
             NSApplication.AboutPanelOptionKey(rawValue: "Copyright"): AppConfig.copyright,
         ])
     }
+}
+
+class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDockMenu(_: NSApplication) -> NSMenu? {
+        let menu = NSMenu()
+        let languageManager = LanguageManager.shared
+
+        let goToFolderItem = NSMenuItem(
+            title: languageManager.local("go_to_folder"),
+            action: #selector(dockGoToFolder),
+            keyEquivalent: ""
+        )
+        goToFolderItem.target = self
+        menu.addItem(goToFolderItem)
+
+        return menu
+    }
+
+    @objc func dockGoToFolder() {
+        NSApp.activate(ignoringOtherApps: true)
+        NotificationCenter.default.post(name: .showGoToFolderDialog, object: nil)
+    }
+}
+
+extension Notification.Name {
+    static let showGoToFolderDialog = Notification.Name("showGoToFolderDialog")
 }
