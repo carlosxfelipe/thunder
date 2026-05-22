@@ -27,6 +27,14 @@ Gerenciador de arquivos para macOS escrito em Swift com SwiftUI.
 - Painel de armazenamento inteligente nos Ajustes que monitora em tempo real o espaço total, utilizado e disponível de todos os discos internos e externos conectados no Mac
 - Suporte a múltiplos idiomas (Português, Inglês e Espanhol)
 
+## Instalação via Homebrew 🍺
+
+Se você utiliza o [Homebrew](https://brew.sh/), pode instalar o Thunder de forma extremamente simples com um único comando no terminal:
+
+```bash
+brew install carlosxfelipe/tap/thunder
+```
+
 ## Requisitos
 
 - macOS 14.0 (Sonoma) ou superior
