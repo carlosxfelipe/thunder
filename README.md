@@ -53,13 +53,23 @@ brew install carlosxfelipe/tap/thunder
 
 ## Como rodar
 
-```
+```bash
 git clone https://github.com/carlosxfelipe/thunar.git
 cd thunar
 open thunar.xcodeproj
 ```
 
 No Xcode, selecione o target `thunar` e clique em Run (Cmd+R).
+
+## Testes Automatizados
+
+O projeto inclui uma suíte de testes unitários super rápida para garantir a estabilidade das operações centrais do gerenciador de arquivos (criação de pastas/arquivos, proteção contra duplicatas, renomeação, exclusão permanente e a pilha de histórico de navegação). 
+
+Para rodar todos os testes pelo terminal, utilize o script:
+
+```bash
+./scripts/run_tests.sh
+```
 
 ## Build de distribuição (.dmg)
 

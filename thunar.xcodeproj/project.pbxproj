@@ -6,11 +6,27 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		076A223A2FC2479400049F2B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 07E3F9842FAFC440000811F7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 07E3F98B2FAFC440000811F7;
+			remoteInfo = thunar;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		076A22362FC2479400049F2B /* ThunderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ThunderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		07E3F98C2FAFC440000811F7 /* Thunder.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Thunder.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		076A22372FC2479400049F2B /* ThunderTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ThunderTests;
+			sourceTree = "<group>";
+		};
 		07E3F98E2FAFC440000811F7 /* thunar */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = thunar;
@@ -19,6 +35,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		076A22332FC2479400049F2B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		07E3F9892FAFC440000811F7 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -33,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				07E3F98E2FAFC440000811F7 /* thunar */,
+				076A22372FC2479400049F2B /* ThunderTests */,
 				07E3F98D2FAFC440000811F7 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				07E3F98C2FAFC440000811F7 /* Thunder.app */,
+				076A22362FC2479400049F2B /* ThunderTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,6 +73,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		076A22352FC2479400049F2B /* ThunderTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 076A223E2FC2479400049F2B /* Build configuration list for PBXNativeTarget "ThunderTests" */;
+			buildPhases = (
+				076A22322FC2479400049F2B /* Sources */,
+				076A22332FC2479400049F2B /* Frameworks */,
+				076A22342FC2479400049F2B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				076A223B2FC2479400049F2B /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				076A22372FC2479400049F2B /* ThunderTests */,
+			);
+			name = ThunderTests;
+			packageProductDependencies = (
+			);
+			productName = ThunderTests;
+			productReference = 076A22362FC2479400049F2B /* ThunderTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		07E3F98B2FAFC440000811F7 /* thunar */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 07E3F9972FAFC442000811F7 /* Build configuration list for PBXNativeTarget "thunar" */;
@@ -77,9 +125,13 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2640;
+				LastSwiftUpdateCheck = 2650;
 				LastUpgradeCheck = 2650;
 				TargetAttributes = {
+					076A22352FC2479400049F2B = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = 07E3F98B2FAFC440000811F7;
+					};
 					07E3F98B2FAFC440000811F7 = {
 						CreatedOnToolsVersion = 26.4.1;
 					};
@@ -102,11 +154,19 @@
 			projectRoot = "";
 			targets = (
 				07E3F98B2FAFC440000811F7 /* thunar */,
+				076A22352FC2479400049F2B /* ThunderTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		076A22342FC2479400049F2B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		07E3F98A2FAFC440000811F7 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -117,6 +177,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		076A22322FC2479400049F2B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		07E3F9882FAFC440000811F7 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -126,7 +193,55 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		076A223B2FC2479400049F2B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 07E3F98B2FAFC440000811F7 /* thunar */;
+			targetProxy = 076A223A2FC2479400049F2B /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		076A223C2FC2479400049F2B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.ThunderTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Thunder.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Thunder";
+			};
+			name = Debug;
+		};
+		076A223D2FC2479400049F2B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.ThunderTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Thunder.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Thunder";
+			};
+			name = Release;
+		};
 		07E3F9952FAFC442000811F7 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -322,6 +437,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		076A223E2FC2479400049F2B /* Build configuration list for PBXNativeTarget "ThunderTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				076A223C2FC2479400049F2B /* Debug */,
+				076A223D2FC2479400049F2B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		07E3F9872FAFC440000811F7 /* Build configuration list for PBXProject "thunar" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

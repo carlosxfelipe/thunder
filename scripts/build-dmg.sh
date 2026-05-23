@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Gera Thunar.dmg para distribuição (sem Developer ID).
-# Uso: ./scripts/build-dmg.sh
+# Generates Thunder.dmg for distribution (without Developer ID).
+# Usage: ./scripts/build-dmg.sh
 
 set -euo pipefail
 
@@ -12,7 +12,7 @@ BUILD_DIR="build"
 APP_PATH="${BUILD_DIR}/Build/Products/Release/${APP_NAME}.app"
 STAGING_DIR="dmg-staging"
 
-echo "==> Compilando Release..."
+echo "==> Compiling Release..."
 xcodebuild -project thunar.xcodeproj \
   -scheme thunar \
   -configuration Release \
@@ -20,7 +20,7 @@ xcodebuild -project thunar.xcodeproj \
   clean build | tail -5
 
 if [ ! -d "${APP_PATH}" ]; then
-  echo "Falha: ${APP_PATH} nao foi gerado." >&2
+  echo "Error: ${APP_PATH} was not generated." >&2
   exit 1
 fi
 
@@ -33,7 +33,7 @@ else
   DMG_NAME="${APP_NAME}-${VERSION}.dmg"
 fi
 
-echo "==> Montando DMG (${DMG_NAME})..."
+echo "==> Building DMG (${DMG_NAME})..."
 rm -rf "${STAGING_DIR}" "${DMG_NAME}"
 mkdir -p "${STAGING_DIR}"
 cp -R "${APP_PATH}" "${STAGING_DIR}/"
@@ -47,4 +47,4 @@ hdiutil create \
 
 rm -rf "${STAGING_DIR}"
 
-echo "==> Pronto: ${DMG_NAME} ($(du -h "${DMG_NAME}" | cut -f1))"
+echo "==> Done: ${DMG_NAME} ($(du -h "${DMG_NAME}" | cut -f1))"
