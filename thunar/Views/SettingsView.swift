@@ -14,6 +14,8 @@ struct SettingsView: View {
     @AppStorage("showFavorites") private var showFavorites: Bool = true
     @AppStorage("useLargerFolderIcons") private var useLargerFolderIcons = false
     @AppStorage("sortFoldersFirst") private var sortFoldersFirst = false
+    @AppStorage("isMCPEnabled") private var isMCPEnabled: Bool = true
+    @AppStorage("mcpPort") private var mcpPort: Int = 8888
 
     @ObservedObject private var languageManager = LanguageManager.shared
 
@@ -209,6 +211,38 @@ struct SettingsView: View {
             }
             .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didUnmountNotification)) { _ in
                 refreshDiskInfos()
+            }
+
+            Form {
+                Section {
+                    Toggle(languageManager.local("mcp_enable"), isOn: $isMCPEnabled)
+
+                    LabeledContent(languageManager.local("mcp_port")) {
+                        TextField("", value: $mcpPort, formatter: NumberFormatter())
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 80)
+                    }
+                    .disabled(!isMCPEnabled)
+                } header: {
+                    Text(languageManager.local("mcp_integration"))
+                        .font(.body)
+                        .padding(.bottom, 8)
+                } footer: {
+                    Text(languageManager.local("mcp_description"))
+                        .foregroundColor(.secondary)
+                        .padding(.top, 4)
+                }
+            }
+            .formStyle(.grouped)
+            .tabItem {
+                Label(languageManager.local("mcp_integration"), systemImage: "network")
+            }
+            .frame(width: 450, height: 250)
+            .onChange(of: isMCPEnabled) { _, newValue in
+                ThunderMCPManager.shared.updateState(enabled: newValue, port: mcpPort)
+            }
+            .onChange(of: mcpPort) { _, newValue in
+                ThunderMCPManager.shared.updateState(enabled: isMCPEnabled, port: newValue)
             }
         }
         .padding(20)

@@ -72,7 +72,11 @@ struct thunarApp: App {
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_: Notification) {
-        ThunderMCPManager.shared.start()
+        let defaults = UserDefaults.standard
+        defaults.register(defaults: ["isMCPEnabled": true, "mcpPort": 8888])
+        let isEnabled = defaults.bool(forKey: "isMCPEnabled")
+        let port = defaults.integer(forKey: "mcpPort")
+        ThunderMCPManager.shared.updateState(enabled: isEnabled, port: port)
     }
 
     func applicationDockMenu(_: NSApplication) -> NSMenu? {

@@ -1303,7 +1303,7 @@ struct ItemInfoSheet: View {
                 return (total, count)
             }
 
-            for case let childURL as URL in enumerator {
+            while let childURL = enumerator.nextObject() as? URL {
                 if Task.isCancelled {
                     return (total, count)
                 }

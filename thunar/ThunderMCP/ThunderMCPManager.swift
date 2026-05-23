@@ -35,6 +35,15 @@ public class ThunderMCPManager: ThunderMCPDelegate {
         server.stop()
     }
 
+    public func updateState(enabled: Bool, port: Int) {
+        stop()
+        if enabled {
+            server = MCPServer(port: UInt16(port))
+            server.delegate = tools
+            start()
+        }
+    }
+
     // MARK: - ThunderMCPDelegate
 
     public func getActiveTabPath() -> String? {

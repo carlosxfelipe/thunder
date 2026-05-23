@@ -218,6 +218,10 @@ enum Translations {
             "storage_used": [.ptBR: "Utilizado", .en: "Used"],
             "storage_free": [.ptBR: "Disponível", .en: "Available"],
             "storage_unavailable": [.ptBR: "Informações de armazenamento indisponíveis", .en: "Storage information unavailable"],
+            "mcp_integration": [.ptBR: "Integração", .en: "Integration"],
+            "mcp_enable": [.ptBR: "Ativar Servidor MCP", .en: "Enable MCP Server"],
+            "mcp_port": [.ptBR: "Porta do Servidor", .en: "Server Port"],
+            "mcp_description": [.ptBR: "Permite que assistentes de IA interajam com o Thunder.", .en: "Allows AI assistants to interact with Thunder."],
         ]
 
         let spanish: [String: String] = [
@@ -385,6 +389,10 @@ enum Translations {
             "storage_used": "Utilizado",
             "storage_free": "Disponible",
             "storage_unavailable": "Información de almacenamiento no disponible",
+            "mcp_integration": "Integración",
+            "mcp_enable": "Activar Servidor MCP",
+            "mcp_port": "Puerto del Servidor",
+            "mcp_description": "Permite que los asistentes de IA interactúen con Thunder.",
         ]
 
         if lang == .es {
