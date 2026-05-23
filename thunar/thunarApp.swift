@@ -71,6 +71,10 @@ struct thunarApp: App {
 }
 
 class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_: Notification) {
+        ThunderMCPManager.shared.start()
+    }
+
     func applicationDockMenu(_: NSApplication) -> NSMenu? {
         let menu = NSMenu()
         let languageManager = LanguageManager.shared
