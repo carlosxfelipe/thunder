@@ -27,9 +27,9 @@ Gerenciador de arquivos para macOS escrito em Swift com SwiftUI.
 - Painel de armazenamento inteligente nos Ajustes que monitora em tempo real o espaço total, utilizado e disponível de todos os discos internos e externos conectados no Mac
 - Suporte a múltiplos idiomas (Português, Inglês e Espanhol)
 
-## Integração com Inteligência Artificial (MCP Server) 🤖
+## Integração MCP (IA) 🤖
 
-O Thunder possui um servidor embutido do protocolo **MCP (Model Context Protocol)** na porta 8888, rodando de forma silenciosa via Server-Sent Events. Esse servidor atua como uma ponte de **leitura de contexto e navegação visual**, permitindo que assistentes de IA (como Antigravity, Claude Desktop, Cursor e Windsurf) entendam exatamente o que você está visualizando na interface gráfica.
+O Thunder possui um servidor embutido do protocolo **MCP (Model Context Protocol)** na porta 8888 (desativado por padrão). Quando ativado nos Ajustes do aplicativo, ele roda de forma silenciosa via Server-Sent Events e atua como uma ponte de **leitura de contexto e navegação visual**, permitindo que assistentes de IA (como Antigravity, Claude Desktop, Cursor e Windsurf) entendam exatamente o que você está visualizando na interface gráfica.
 
 > **Importante:** O MCP do Thunder **não** possui ferramentas de exclusão ou sobrescrita no seu sistema de arquivos. Uma IA maliciosa não consegue usar os privilégios do Thunder para apagar seus arquivos. As interações são limitadas às ações construtivas listadas abaixo!
 

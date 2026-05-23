@@ -14,7 +14,7 @@ struct SettingsView: View {
     @AppStorage("showFavorites") private var showFavorites: Bool = true
     @AppStorage("useLargerFolderIcons") private var useLargerFolderIcons = false
     @AppStorage("sortFoldersFirst") private var sortFoldersFirst = false
-    @AppStorage("isMCPEnabled") private var isMCPEnabled: Bool = true
+    @AppStorage("isMCPEnabled") private var isMCPEnabled: Bool = false
     @AppStorage("mcpPort") private var mcpPort: Int = 8888
 
     @ObservedObject private var languageManager = LanguageManager.shared
