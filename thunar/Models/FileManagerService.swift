@@ -723,24 +723,61 @@ class FileManagerService: ObservableObject {
             var destURL = destinationDir.appendingPathComponent(sourceURL.lastPathComponent)
 
             if fileManager.fileExists(atPath: destURL.path) {
+                var isSourceDir: ObjCBool = false
+                var isDestDir: ObjCBool = false
+                fileManager.fileExists(atPath: sourceURL.path, isDirectory: &isSourceDir)
+                fileManager.fileExists(atPath: destURL.path, isDirectory: &isDestDir)
+                let canMerge = isSourceDir.boolValue && isDestDir.boolValue
+
                 let alert = NSAlert()
                 alert.messageText = languageManager.local("item_exists_title")
                 alert.informativeText = String(format: languageManager.local("item_exists_message"), sourceURL.lastPathComponent)
                 alert.icon = NSWorkspace.shared.icon(forFile: destURL.path)
+
+                if canMerge {
+                    alert.addButton(withTitle: languageManager.local("merge"))
+                }
                 alert.addButton(withTitle: languageManager.local("replace"))
                 alert.addButton(withTitle: languageManager.local("keep_both"))
                 alert.addButton(withTitle: languageManager.local("skip"))
 
                 let response = alert.runModal()
+                var action = "skip"
 
-                if response == .alertFirstButtonReturn {
+                if canMerge {
+                    switch response {
+                    case .alertFirstButtonReturn: action = "merge"
+                    case .alertSecondButtonReturn: action = "replace"
+                    case .alertThirdButtonReturn: action = "keep_both"
+                    default: action = "skip"
+                    }
+                } else {
+                    switch response {
+                    case .alertFirstButtonReturn: action = "replace"
+                    case .alertSecondButtonReturn: action = "keep_both"
+                    default: action = "skip"
+                    }
+                }
+
+                switch action {
+                case "merge":
+                    do {
+                        try mergeDirectory(source: sourceURL, destination: destURL)
+                        affectedDirectories.insert(sourceURL.deletingLastPathComponent())
+                        movedCount += 1
+                        lastName = sourceURL.lastPathComponent
+                    } catch {
+                        errorMessage = "Error merging: \(error.localizedDescription)"
+                    }
+                    continue
+                case "replace":
                     do {
                         try fileManager.removeItem(at: destURL)
                     } catch {
                         errorMessage = "Error replacing: \(error.localizedDescription)"
                         continue
                     }
-                } else if response == .alertSecondButtonReturn {
+                case "keep_both":
                     var counter = 2
                     let baseName = sourceURL.deletingPathExtension().lastPathComponent
                     let ext = sourceURL.pathExtension
@@ -749,7 +786,9 @@ class FileManagerService: ObservableObject {
                         destURL = destinationDir.appendingPathComponent(newName)
                         counter += 1
                     }
-                } else {
+                case "skip":
+                    continue
+                default:
                     continue
                 }
             }
@@ -771,6 +810,44 @@ class FileManagerService: ObservableObject {
             postStatus(String(format: languageManager.local("moved_singular"), lastName, destinationDir.lastPathComponent))
         } else if movedCount > 1 {
             postStatus(String(format: languageManager.local("moved_plural"), movedCount, destinationDir.lastPathComponent))
+        }
+    }
+
+    private func mergeDirectory(source: URL, destination: URL, isCopy: Bool = false) throws {
+        let contents = try fileManager.contentsOfDirectory(at: source, includingPropertiesForKeys: nil)
+        for item in contents {
+            let destItem = destination.appendingPathComponent(item.lastPathComponent)
+
+            var isSourceDir: ObjCBool = false
+            var isDestDir: ObjCBool = false
+            let destExists = fileManager.fileExists(atPath: destItem.path, isDirectory: &isDestDir)
+            fileManager.fileExists(atPath: item.path, isDirectory: &isSourceDir)
+
+            if destExists {
+                if isSourceDir.boolValue, isDestDir.boolValue {
+                    // Both are directories, recurse
+                    try mergeDirectory(source: item, destination: destItem, isCopy: isCopy)
+                } else {
+                    // Conflict, replace destItem with source item
+                    try fileManager.removeItem(at: destItem)
+                    if isCopy {
+                        try fileManager.copyItem(at: item, to: destItem)
+                    } else {
+                        try fileManager.moveItem(at: item, to: destItem)
+                    }
+                }
+            } else {
+                // No conflict, move directly
+                if isCopy {
+                    try fileManager.copyItem(at: item, to: destItem)
+                } else {
+                    try fileManager.moveItem(at: item, to: destItem)
+                }
+            }
+        }
+        // Remove the source directory which should now be empty
+        if !isCopy {
+            try fileManager.removeItem(at: source)
         }
     }
 
@@ -819,26 +896,64 @@ class FileManagerService: ObservableObject {
 
             var skipThisItem = false
             if fileManager.fileExists(atPath: destinationURL.path) {
+                var isSourceDir: ObjCBool = false
+                var isDestDir: ObjCBool = false
+                fileManager.fileExists(atPath: sourceURL.path, isDirectory: &isSourceDir)
+                fileManager.fileExists(atPath: destinationURL.path, isDirectory: &isDestDir)
+                let canMerge = isSourceDir.boolValue && isDestDir.boolValue
+
                 let alert = NSAlert()
                 alert.messageText = languageManager.local("item_exists_title")
                 alert.informativeText = String(format: languageManager.local("item_exists_message"), sourceURL.lastPathComponent)
                 alert.icon = NSWorkspace.shared.icon(forFile: destinationURL.path)
+
+                if canMerge {
+                    alert.addButton(withTitle: languageManager.local("merge"))
+                }
                 alert.addButton(withTitle: languageManager.local("replace"))
                 alert.addButton(withTitle: languageManager.local("keep_both"))
                 alert.addButton(withTitle: languageManager.local("skip"))
 
                 let response = alert.runModal()
+                var action = "skip"
 
-                if response == .alertFirstButtonReturn {
-                    // Replace
+                if canMerge {
+                    switch response {
+                    case .alertFirstButtonReturn: action = "merge"
+                    case .alertSecondButtonReturn: action = "replace"
+                    case .alertThirdButtonReturn: action = "keep_both"
+                    default: action = "skip"
+                    }
+                } else {
+                    switch response {
+                    case .alertFirstButtonReturn: action = "replace"
+                    case .alertSecondButtonReturn: action = "keep_both"
+                    default: action = "skip"
+                    }
+                }
+
+                switch action {
+                case "merge":
+                    do {
+                        let isCopy = clipboardItem.action == .copy
+                        try mergeDirectory(source: sourceURL, destination: destinationURL, isCopy: isCopy)
+                        if clipboardItem.action == .cut {
+                            affectedDirectories.insert(sourceURL.deletingLastPathComponent())
+                        }
+                        processedCount += 1
+                        lastProcessedName = sourceURL.lastPathComponent
+                    } catch {
+                        errorMessage = "Erro ao mesclar: \(error.localizedDescription)"
+                    }
+                    continue // proceed to next item without going to normal copy/move logic below
+                case "replace":
                     do {
                         try fileManager.removeItem(at: destinationURL)
                     } catch {
                         errorMessage = "Erro ao substituir: \(error.localizedDescription)"
                         skipThisItem = true
                     }
-                } else if response == .alertSecondButtonReturn {
-                    // Keep both
+                case "keep_both":
                     var counter = 2
                     let baseName = sourceURL.deletingPathExtension().lastPathComponent
                     let ext = sourceURL.pathExtension
@@ -847,8 +962,9 @@ class FileManagerService: ObservableObject {
                         destinationURL = currentDirectory.appendingPathComponent(newName)
                         counter += 1
                     }
-                } else {
-                    // Skip
+                case "skip":
+                    fallthrough
+                default:
                     skipThisItem = true
                 }
             }
