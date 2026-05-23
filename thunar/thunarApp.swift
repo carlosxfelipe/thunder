@@ -70,6 +70,7 @@ struct thunarApp: App {
     }
 }
 
+@MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_: Notification) {
         let defaults = UserDefaults.standard

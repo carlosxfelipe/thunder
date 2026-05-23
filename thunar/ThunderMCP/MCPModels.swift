@@ -68,11 +68,11 @@ public struct MCPNotification: Codable {
 /// Base MCP Response
 public struct MCPResponse: Codable {
     public let jsonrpc: String
-    public let id: MCPID
+    public let id: MCPID?
     public let result: AnyCodable?
     public let error: MCPError?
 
-    public init(id: MCPID, result: AnyCodable? = nil, error: MCPError? = nil) {
+    public init(id: MCPID?, result: AnyCodable? = nil, error: MCPError? = nil) {
         jsonrpc = JSON_RPC_VERSION
         self.id = id
         self.result = result
@@ -81,7 +81,7 @@ public struct MCPResponse: Codable {
 }
 
 /// JSON-RPC Error
-public struct MCPError: Codable {
+public struct MCPError: Codable, Error {
     public let code: Int
     public let message: String
     public let data: AnyCodable?

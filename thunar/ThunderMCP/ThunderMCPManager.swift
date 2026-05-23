@@ -8,6 +8,7 @@
 import AppKit
 import Foundation
 
+@MainActor
 public class ThunderMCPManager: ThunderMCPDelegate {
     public static let shared = ThunderMCPManager()
 

@@ -9,13 +9,14 @@ import Foundation
 import Network
 
 public protocol MCPServerDelegate: AnyObject {
-    func mcpServer(_ server: MCPServer, didReceiveRequest method: String, params: [String: AnyCodable]?) -> AnyCodable?
+    func mcpServer(_ server: MCPServer, didReceiveRequest method: String, params: [String: AnyCodable]?) -> Result<AnyCodable, MCPError>
 }
 
 public class MCPServer {
     private let port: NWEndpoint.Port
     private var listener: NWListener?
     private var sseConnections: [NWConnection] = []
+    private var connectionBuffers: [ObjectIdentifier: Data] = [:]
     private let queue = DispatchQueue(label: "com.thunder.mcp.server")
 
     public weak var delegate: MCPServerDelegate?
@@ -47,28 +48,46 @@ public class MCPServer {
     }
 
     public func stop() {
-        listener?.cancel()
-        for connection in sseConnections {
-            connection.cancel()
+        queue.async { [weak self] in
+            guard let self = self else { return }
+            self.listener?.cancel()
+            for connection in self.sseConnections {
+                connection.cancel()
+            }
+            self.sseConnections.removeAll()
+            self.connectionBuffers.removeAll()
         }
-        sseConnections.removeAll()
     }
 
     private func handleNewConnection(_ connection: NWConnection) {
+        let id = ObjectIdentifier(connection)
+        queue.async { [weak self] in
+            guard let self = self else { return }
+            self.connectionBuffers[id] = Data()
+        }
         connection.start(queue: queue)
         receive(on: connection)
     }
 
     private func receive(on connection: NWConnection) {
+        let id = ObjectIdentifier(connection)
         connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
             guard let self = self else { return }
 
-            if let data = data, !data.isEmpty, let string = String(data: data, encoding: .utf8) {
-                self.processReceivedData(string, connection: connection)
+            if let data = data, !data.isEmpty {
+                self.queue.async {
+                    self.connectionBuffers[id, default: Data()].append(data)
+                    self.processBuffer(for: connection)
+                }
             }
 
             if isComplete || error != nil {
-                self.sseConnections.removeAll { $0 === connection }
+                self.queue.async {
+                    self.connectionBuffers.removeValue(forKey: id)
+                }
+                self.queue.async { [weak self] in
+                    self?.sseConnections.removeAll { $0 === connection }
+                }
                 connection.cancel()
             } else {
                 self.receive(on: connection)
@@ -76,23 +95,70 @@ public class MCPServer {
         }
     }
 
-    private func processReceivedData(_ string: String, connection: NWConnection) {
-        if string.hasPrefix("GET ") || string.hasPrefix("POST ") {
-            // Very simple HTTP interceptor for SSE / POST endpoints
-            if string.contains("/sse") {
-                setupSSE(connection: connection)
-            } else if string.contains("/message") {
-                // Extract body for POST
-                if let bodyStart = string.range(of: "\r\n\r\n") {
-                    let body = String(string[bodyStart.upperBound...])
-                    if let data = body.data(using: .utf8) {
-                        handleJSONRPC(data, connection: connection)
-                    }
+    private func processBuffer(for connection: NWConnection) {
+        let id = ObjectIdentifier(connection)
+        guard var buffer = connectionBuffers[id], !buffer.isEmpty else { return }
+
+        while !buffer.isEmpty {
+            // Find the header-body separator \r\n\r\n
+            guard let rangeOfSeparator = buffer.range(of: Data([13, 10, 13, 10])) else {
+                break // Wait for more data to get full headers
+            }
+
+            let headerData = buffer.subdata(in: 0 ..< rangeOfSeparator.lowerBound)
+            guard let headerString = String(data: headerData, encoding: .utf8) else {
+                // Invalid headers, close connection
+                connectionBuffers[id] = nil
+                connection.cancel()
+                return
+            }
+
+            // Parse Content-Length from headers
+            var contentLength = 0
+            let lines = headerString.components(separatedBy: "\r\n")
+            guard let requestLine = lines.first else {
+                connectionBuffers[id] = nil
+                connection.cancel()
+                return
+            }
+
+            for line in lines.dropFirst() {
+                let parts = line.split(separator: ":", maxSplits: 1).map { $0.trimmingCharacters(in: .whitespaces) }
+                if parts.count == 2, parts[0].lowercased() == "content-length", let len = Int(parts[1]) {
+                    contentLength = len
                 }
+            }
+
+            let bodyStart = rangeOfSeparator.upperBound
+            let totalRequestLength = bodyStart + contentLength
+
+            // Check if we have received the complete body
+            if buffer.count < totalRequestLength {
+                break // Wait for more data to get the complete body
+            }
+
+            // Extract body data
+            let bodyData = buffer.subdata(in: bodyStart ..< totalRequestLength)
+
+            // Consume request from buffer
+            buffer.removeSubrange(0 ..< totalRequestLength)
+            connectionBuffers[id] = buffer
+
+            // Route request
+            if requestLine.contains("/sse") {
+                setupSSE(connection: connection)
+            } else if requestLine.contains("/message") {
+                handleJSONRPC(bodyData, connection: connection)
 
                 // Respond to POST
-                let response = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"
+                let response = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: keep-alive\r\nAccess-Control-Allow-Origin: *\r\n\r\n"
                 connection.send(content: response.data(using: .utf8), completion: .contentProcessed { _ in })
+            } else {
+                // Respond to unknown route with 404
+                let response = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                connection.send(content: response.data(using: .utf8), completion: .contentProcessed { _ in
+                    connection.cancel()
+                })
             }
         }
     }
@@ -109,8 +175,10 @@ public class MCPServer {
 
         connection.send(content: headers.data(using: .utf8), completion: .contentProcessed { [weak self] error in
             if error == nil {
-                self?.sseConnections.append(connection)
-                self?.sendEndpointReadyEvent(to: connection)
+                self?.queue.async {
+                    self?.sseConnections.append(connection)
+                    self?.sendEndpointReadyEvent(to: connection)
+                }
             }
         })
     }
@@ -123,18 +191,29 @@ public class MCPServer {
     private func handleJSONRPC(_ data: Data, connection _: NWConnection) {
         let decoder = JSONDecoder()
         if let request = try? decoder.decode(MCPRequest.self, from: data) {
-            var responseResult: AnyCodable? = nil
+            var responseResult: Result<AnyCodable, MCPError>? = nil
 
-            // Dispatch to delegate on main thread to interact with UI
+            // Dispatch to delegate on main thread to interact with UI safely
             DispatchQueue.main.sync {
                 responseResult = self.delegate?.mcpServer(self, didReceiveRequest: request.method, params: request.params)
             }
 
-            let mcpResponse = MCPResponse(id: request.id, result: responseResult)
+            let mcpResponse: MCPResponse
+            if let responseResult = responseResult {
+                switch responseResult {
+                case let .success(result):
+                    mcpResponse = MCPResponse(id: request.id, result: result)
+                case let .failure(error):
+                    mcpResponse = MCPResponse(id: request.id, error: error)
+                }
+            } else {
+                let error = MCPError(code: -32601, message: "Method not found: \(request.method)")
+                mcpResponse = MCPResponse(id: request.id, error: error)
+            }
             sendSSEMessage(mcpResponse)
 
         } else if let request = try? decoder.decode(MCPNotification.self, from: data) {
-            // Ignore notifications for now
+            // Log initialized notifications
             if request.method == "notifications/initialized" {
                 print("MCP Client Initialized")
             }
@@ -150,8 +229,11 @@ public class MCPServer {
         let ssePayload = "event: message\ndata: \(stringData)\n\n"
         let payloadData = ssePayload.data(using: .utf8)
 
-        for connection in sseConnections {
-            connection.send(content: payloadData, completion: .contentProcessed { _ in })
+        queue.async { [weak self] in
+            guard let self = self else { return }
+            for connection in self.sseConnections {
+                connection.send(content: payloadData, completion: .contentProcessed { _ in })
+            }
         }
     }
 }

@@ -7,6 +7,7 @@
 
 import Foundation
 
+@MainActor
 public protocol ThunderMCPDelegate: AnyObject {
     func getActiveTabPath() -> String?
     func getSelectedFiles() -> [String]
@@ -17,6 +18,7 @@ public protocol ThunderMCPDelegate: AnyObject {
     func createFolder(name: String) -> Bool
 }
 
+@MainActor
 public class MCPTools: MCPServerDelegate {
     public weak var delegate: ThunderMCPDelegate?
 
@@ -96,99 +98,144 @@ public class MCPTools: MCPServerDelegate {
 
     // MARK: - MCPServerDelegate
 
-    public func mcpServer(_: MCPServer, didReceiveRequest method: String, params: [String: AnyCodable]?) -> AnyCodable? {
+    public func mcpServer(_: MCPServer, didReceiveRequest method: String, params: [String: AnyCodable]?) -> Result<AnyCodable, MCPError> {
+        // 1. Handshake Initialize Request
+        if method == "initialize" {
+            let initializeResult = AnyCodable([
+                "protocolVersion": "2024-11-05",
+                "capabilities": [
+                    "tools": [:],
+                ],
+                "serverInfo": [
+                    "name": "ThunderMCP",
+                    "version": "1.0.0",
+                ],
+            ])
+            return .success(initializeResult)
+        }
+
+        // 2. Tools List Request
         if method == "tools/list" {
             let toolsList = availableTools.map { AnyCodable([
                 "name": AnyCodable($0.name),
                 "description": AnyCodable($0.description),
                 "inputSchema": $0.inputSchema,
             ]) }
-            return AnyCodable(["tools": AnyCodable(toolsList)])
+            let result = AnyCodable(["tools": AnyCodable(toolsList)])
+            return .success(result)
         }
 
+        // 3. Tools Call Request
         if method == "tools/call" {
             guard let name = params?["name"]?.value as? String else {
-                return AnyCodable(["error": "Tool name is missing"])
+                return .failure(MCPError(code: -32602, message: "Invalid params: Tool name is missing"))
             }
 
             let args = params?["arguments"]?.value as? [String: Any] ?? [:]
 
             switch name {
             case "get_active_tab_path":
-                let path = delegate?.getActiveTabPath() ?? ""
-                return AnyCodable([
-                    "content": AnyCodable([
-                        AnyCodable(["type": "text", "text": AnyCodable(path)]),
-                    ]),
-                ])
+                if let path = delegate?.getActiveTabPath() {
+                    return .success(AnyCodable([
+                        "content": AnyCodable([
+                            AnyCodable(["type": "text", "text": AnyCodable(path)]),
+                        ]),
+                    ]))
+                } else {
+                    return .success(AnyCodable([
+                        "content": AnyCodable([
+                            AnyCodable(["type": "text", "text": AnyCodable("Error: No active tab found. Please make sure Thunder is open and has an active tab.")]),
+                        ]),
+                        "isError": AnyCodable(true),
+                    ]))
+                }
 
             case "get_selected_files":
                 let files = delegate?.getSelectedFiles() ?? []
-                return AnyCodable([
+                if files.isEmpty {
+                    return .success(AnyCodable([
+                        "content": AnyCodable([
+                            AnyCodable(["type": "text", "text": AnyCodable("Error: No files are currently selected in Thunder.")]),
+                        ]),
+                        "isError": AnyCodable(true),
+                    ]))
+                }
+                return .success(AnyCodable([
                     "content": AnyCodable([
                         AnyCodable(["type": "text", "text": AnyCodable(files.joined(separator: "\n"))]),
                     ]),
-                ])
+                ]))
 
             case "move_files":
-                if let sourcePaths = args["sourcePaths"] as? [String],
-                   let targetDir = args["targetDir"] as? String
-                {
-                    let success = delegate?.moveFiles(sourcePaths: sourcePaths, targetDir: targetDir) ?? false
-                    return AnyCodable([
-                        "content": AnyCodable([
-                            AnyCodable(["type": "text", "text": AnyCodable(success ? "Moved successfully" : "Failed to move files")]),
-                        ]),
-                    ])
+                guard let sourcePaths = args["sourcePaths"] as? [String],
+                      let targetDir = args["targetDir"] as? String
+                else {
+                    return .failure(MCPError(code: -32602, message: "Invalid params: Missing sourcePaths or targetDir"))
                 }
+                let success = delegate?.moveFiles(sourcePaths: sourcePaths, targetDir: targetDir) ?? false
+                return .success(AnyCodable([
+                    "content": AnyCodable([
+                        AnyCodable(["type": "text", "text": AnyCodable(success ? "Moved successfully" : "Failed to move files. Please verify that the target directory exists.")]),
+                    ]),
+                    "isError": AnyCodable(!success),
+                ]))
 
             case "compress_items":
-                if let paths = args["paths"] as? [String],
-                   let format = args["format"] as? String
-                {
-                    let success = delegate?.compressItems(paths: paths, format: format) ?? false
-                    return AnyCodable([
-                        "content": AnyCodable([
-                            AnyCodable(["type": "text", "text": AnyCodable(success ? "Compressed successfully" : "Failed to compress files")]),
-                        ]),
-                    ])
+                guard let paths = args["paths"] as? [String],
+                      let format = args["format"] as? String
+                else {
+                    return .failure(MCPError(code: -32602, message: "Invalid params: Missing paths or format"))
                 }
+                let success = delegate?.compressItems(paths: paths, format: format) ?? false
+                return .success(AnyCodable([
+                    "content": AnyCodable([
+                        AnyCodable(["type": "text", "text": AnyCodable(success ? "Compressed successfully" : "Failed to compress files.")]),
+                    ]),
+                    "isError": AnyCodable(!success),
+                ]))
 
             case "open_in_thunder":
-                if let path = args["path"] as? String {
-                    let success = delegate?.openInThunder(path: path) ?? false
-                    return AnyCodable([
-                        "content": AnyCodable([
-                            AnyCodable(["type": "text", "text": AnyCodable(success ? "Opened successfully" : "Failed to open path")]),
-                        ]),
-                    ])
+                guard let path = args["path"] as? String else {
+                    return .failure(MCPError(code: -32602, message: "Invalid params: Missing path"))
                 }
+                let success = delegate?.openInThunder(path: path) ?? false
+                return .success(AnyCodable([
+                    "content": AnyCodable([
+                        AnyCodable(["type": "text", "text": AnyCodable(success ? "Opened successfully" : "Failed to open path in Thunder.")]),
+                    ]),
+                    "isError": AnyCodable(!success),
+                ]))
 
             case "create_file":
-                if let name = args["name"] as? String {
-                    let success = delegate?.createFile(name: name) ?? false
-                    return AnyCodable([
-                        "content": AnyCodable([
-                            AnyCodable(["type": "text", "text": AnyCodable(success ? "File created successfully" : "Failed to create file")]),
-                        ]),
-                    ])
+                guard let name = args["name"] as? String else {
+                    return .failure(MCPError(code: -32602, message: "Invalid params: Missing name"))
                 }
+                let success = delegate?.createFile(name: name) ?? false
+                return .success(AnyCodable([
+                    "content": AnyCodable([
+                        AnyCodable(["type": "text", "text": AnyCodable(success ? "File created successfully" : "Failed to create file. Please check if a file with the same name already exists.")]),
+                    ]),
+                    "isError": AnyCodable(!success),
+                ]))
 
             case "create_folder":
-                if let name = args["name"] as? String {
-                    let success = delegate?.createFolder(name: name) ?? false
-                    return AnyCodable([
-                        "content": AnyCodable([
-                            AnyCodable(["type": "text", "text": AnyCodable(success ? "Folder created successfully" : "Failed to create folder")]),
-                        ]),
-                    ])
+                guard let name = args["name"] as? String else {
+                    return .failure(MCPError(code: -32602, message: "Invalid params: Missing name"))
                 }
+                let success = delegate?.createFolder(name: name) ?? false
+                return .success(AnyCodable([
+                    "content": AnyCodable([
+                        AnyCodable(["type": "text", "text": AnyCodable(success ? "Folder created successfully" : "Failed to create folder. Please check if a folder with the same name already exists.")]),
+                    ]),
+                    "isError": AnyCodable(!success),
+                ]))
 
             default:
-                return AnyCodable(["error": "Tool not found"])
+                return .failure(MCPError(code: -32601, message: "Tool not found: \(name)"))
             }
         }
 
-        return nil
+        // 4. Unsupported JSON-RPC Method
+        return .failure(MCPError(code: -32601, message: "Method not found: \(method)"))
     }
 }
