@@ -13,6 +13,8 @@ public protocol ThunderMCPDelegate: AnyObject {
     func moveFiles(sourcePaths: [String], targetDir: String) -> Bool
     func compressItems(paths: [String], format: String) -> Bool
     func openInThunder(path: String) -> Bool
+    func createFile(name: String) -> Bool
+    func createFolder(name: String) -> Bool
 }
 
 public class MCPTools: MCPServerDelegate {
@@ -65,6 +67,28 @@ public class MCPTools: MCPServerDelegate {
                         "path": ["type": "string"],
                     ],
                     "required": ["path"],
+                ])
+            ),
+            MCPTool(
+                name: "create_file",
+                description: "Creates a new empty file in the currently active tab's directory.",
+                inputSchema: AnyCodable([
+                    "type": "object",
+                    "properties": [
+                        "name": ["type": "string"],
+                    ],
+                    "required": ["name"],
+                ])
+            ),
+            MCPTool(
+                name: "create_folder",
+                description: "Creates a new directory in the currently active tab's directory.",
+                inputSchema: AnyCodable([
+                    "type": "object",
+                    "properties": [
+                        "name": ["type": "string"],
+                    ],
+                    "required": ["name"],
                 ])
             ),
         ]
@@ -136,6 +160,26 @@ public class MCPTools: MCPServerDelegate {
                     return AnyCodable([
                         "content": AnyCodable([
                             AnyCodable(["type": "text", "text": AnyCodable(success ? "Opened successfully" : "Failed to open path")]),
+                        ]),
+                    ])
+                }
+
+            case "create_file":
+                if let name = args["name"] as? String {
+                    let success = delegate?.createFile(name: name) ?? false
+                    return AnyCodable([
+                        "content": AnyCodable([
+                            AnyCodable(["type": "text", "text": AnyCodable(success ? "File created successfully" : "Failed to create file")]),
+                        ]),
+                    ])
+                }
+
+            case "create_folder":
+                if let name = args["name"] as? String {
+                    let success = delegate?.createFolder(name: name) ?? false
+                    return AnyCodable([
+                        "content": AnyCodable([
+                            AnyCodable(["type": "text", "text": AnyCodable(success ? "Folder created successfully" : "Failed to create folder")]),
                         ]),
                     ])
                 }

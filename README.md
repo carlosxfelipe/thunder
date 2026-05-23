@@ -31,12 +31,12 @@ Gerenciador de arquivos para macOS escrito em Swift com SwiftUI.
 
 O Thunder possui um servidor embutido do protocolo **MCP (Model Context Protocol)** na porta 8888, rodando de forma silenciosa via Server-Sent Events. Esse servidor atua como uma ponte de **leitura de contexto e navegação visual**, permitindo que assistentes de IA (como Antigravity, Claude Desktop, Cursor e Windsurf) entendam exatamente o que você está visualizando na interface gráfica.
 
-> **Importante:** O MCP do Thunder **não** é usado para criar, deletar ou editar textos no seu sistema de arquivos de forma invisível (as IAs utilizam ferramentas próprias de terminal para isso). O MCP serve para conectar a IA ao estado visual do seu gerenciador de arquivos!
+> **Importante:** O MCP do Thunder **não** possui ferramentas de exclusão ou sobrescrita no seu sistema de arquivos. Uma IA maliciosa não consegue usar os privilégios do Thunder para apagar seus arquivos. As interações são limitadas às ações construtivas listadas abaixo!
 
 **Ferramentas MCP disponíveis nativamente no Thunder:**
 - **Ler o contexto da UI:** A IA consegue perguntar qual pasta está aberta na aba ativa (`get_active_tab_path`) e quais arquivos você selecionou com o mouse (`get_selected_files`).
 - **Navegação remota:** A IA consegue fazer a sua interface gráfica pular automaticamente para uma pasta específica (`open_in_thunder`).
-- **Ações nativas do App:** A IA pode acionar funções exclusivas da interface do Thunder, como mover itens e gerar aquele feedback visual instantâneo (`move_files`) ou compactar arquivos nos formatos nativos suportados (`compress_items`).
+- **Ações nativas do App:** A IA pode acionar funções exclusivas da interface do Thunder, como mover itens e gerar feedback visual instantâneo (`move_files`), compactar arquivos (`compress_items`) ou criar arquivos e pastas vazias na sua aba ativa atual (`create_file` e `create_folder`).
 
 ## Instalação via Homebrew 🍺
 

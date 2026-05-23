@@ -51,8 +51,8 @@ public class ThunderMCPManager: ThunderMCPDelegate {
     }
 
     public func getSelectedFiles() -> [String] {
-        if let selected = activeTabManager?.activeFileManager?.selectedFiles {
-            return selected.map { $0.url.path }
+        if let selected = activeTabManager?.activeFileManager?.selectedURLs {
+            return selected.map { $0.path }
         }
         return []
     }
@@ -80,6 +80,18 @@ public class ThunderMCPManager: ThunderMCPDelegate {
     public func openInThunder(path: String) -> Bool {
         guard let fm = activeTabManager?.activeFileManager else { return false }
         fm.navigateTo(URL(fileURLWithPath: path))
+        return true
+    }
+
+    public func createFile(name: String) -> Bool {
+        guard let fm = activeTabManager?.activeFileManager else { return false }
+        fm.createFile(name: name)
+        return true
+    }
+
+    public func createFolder(name: String) -> Bool {
+        guard let fm = activeTabManager?.activeFileManager else { return false }
+        fm.createFolder(name: name)
         return true
     }
 }
