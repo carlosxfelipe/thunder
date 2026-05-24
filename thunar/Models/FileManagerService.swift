@@ -708,6 +708,7 @@ class FileManagerService: ObservableObject {
         var movedCount = 0
         var affectedDirectories: Set<URL> = [destinationDir]
         var lastName = ""
+        var applyToAllAction: String? = nil
 
         for sourceURL in urlsToMove {
             // Don't move into itself or same directory
@@ -729,33 +730,47 @@ class FileManagerService: ObservableObject {
                 fileManager.fileExists(atPath: destURL.path, isDirectory: &isDestDir)
                 let canMerge = isSourceDir.boolValue && isDestDir.boolValue
 
-                let alert = NSAlert()
-                alert.messageText = languageManager.local("item_exists_title")
-                alert.informativeText = String(format: languageManager.local("item_exists_message"), sourceURL.lastPathComponent)
-                alert.icon = NSWorkspace.shared.icon(forFile: destURL.path)
-
-                if canMerge {
-                    alert.addButton(withTitle: languageManager.local("merge"))
-                }
-                alert.addButton(withTitle: languageManager.local("replace"))
-                alert.addButton(withTitle: languageManager.local("keep_both"))
-                alert.addButton(withTitle: languageManager.local("skip"))
-
-                let response = alert.runModal()
                 var action = "skip"
 
-                if canMerge {
-                    switch response {
-                    case .alertFirstButtonReturn: action = "merge"
-                    case .alertSecondButtonReturn: action = "replace"
-                    case .alertThirdButtonReturn: action = "keep_both"
-                    default: action = "skip"
+                if let autoAction = applyToAllAction {
+                    action = autoAction
+                    if action == "merge" && !canMerge {
+                        action = "replace"
                     }
                 } else {
-                    switch response {
-                    case .alertFirstButtonReturn: action = "replace"
-                    case .alertSecondButtonReturn: action = "keep_both"
-                    default: action = "skip"
+                    let alert = NSAlert()
+                    alert.messageText = languageManager.local("item_exists_title")
+                    alert.informativeText = String(format: languageManager.local("item_exists_message"), sourceURL.lastPathComponent)
+                    alert.icon = NSWorkspace.shared.icon(forFile: destURL.path)
+                    alert.showsSuppressionButton = true
+                    alert.suppressionButton?.title = languageManager.local("apply_to_all")
+
+                    if canMerge {
+                        alert.addButton(withTitle: languageManager.local("merge"))
+                    }
+                    alert.addButton(withTitle: languageManager.local("replace"))
+                    alert.addButton(withTitle: languageManager.local("keep_both"))
+                    alert.addButton(withTitle: languageManager.local("skip"))
+
+                    let response = alert.runModal()
+
+                    if canMerge {
+                        switch response {
+                        case .alertFirstButtonReturn: action = "merge"
+                        case .alertSecondButtonReturn: action = "replace"
+                        case .alertThirdButtonReturn: action = "keep_both"
+                        default: action = "skip"
+                        }
+                    } else {
+                        switch response {
+                        case .alertFirstButtonReturn: action = "replace"
+                        case .alertSecondButtonReturn: action = "keep_both"
+                        default: action = "skip"
+                        }
+                    }
+
+                    if alert.suppressionButton?.state == .on {
+                        applyToAllAction = action
                     }
                 }
 
@@ -886,6 +901,7 @@ class FileManagerService: ObservableObject {
         var affectedDirectories: Set<URL> = [currentDirectory]
         var processedCount = 0
         var lastProcessedName = ""
+        var applyToAllAction: String? = nil
 
         for sourceURL in clipboardItem.urls {
             var destinationURL = currentDirectory.appendingPathComponent(sourceURL.lastPathComponent)
@@ -902,33 +918,47 @@ class FileManagerService: ObservableObject {
                 fileManager.fileExists(atPath: destinationURL.path, isDirectory: &isDestDir)
                 let canMerge = isSourceDir.boolValue && isDestDir.boolValue
 
-                let alert = NSAlert()
-                alert.messageText = languageManager.local("item_exists_title")
-                alert.informativeText = String(format: languageManager.local("item_exists_message"), sourceURL.lastPathComponent)
-                alert.icon = NSWorkspace.shared.icon(forFile: destinationURL.path)
-
-                if canMerge {
-                    alert.addButton(withTitle: languageManager.local("merge"))
-                }
-                alert.addButton(withTitle: languageManager.local("replace"))
-                alert.addButton(withTitle: languageManager.local("keep_both"))
-                alert.addButton(withTitle: languageManager.local("skip"))
-
-                let response = alert.runModal()
                 var action = "skip"
 
-                if canMerge {
-                    switch response {
-                    case .alertFirstButtonReturn: action = "merge"
-                    case .alertSecondButtonReturn: action = "replace"
-                    case .alertThirdButtonReturn: action = "keep_both"
-                    default: action = "skip"
+                if let autoAction = applyToAllAction {
+                    action = autoAction
+                    if action == "merge" && !canMerge {
+                        action = "replace"
                     }
                 } else {
-                    switch response {
-                    case .alertFirstButtonReturn: action = "replace"
-                    case .alertSecondButtonReturn: action = "keep_both"
-                    default: action = "skip"
+                    let alert = NSAlert()
+                    alert.messageText = languageManager.local("item_exists_title")
+                    alert.informativeText = String(format: languageManager.local("item_exists_message"), sourceURL.lastPathComponent)
+                    alert.icon = NSWorkspace.shared.icon(forFile: destinationURL.path)
+                    alert.showsSuppressionButton = true
+                    alert.suppressionButton?.title = languageManager.local("apply_to_all")
+
+                    if canMerge {
+                        alert.addButton(withTitle: languageManager.local("merge"))
+                    }
+                    alert.addButton(withTitle: languageManager.local("replace"))
+                    alert.addButton(withTitle: languageManager.local("keep_both"))
+                    alert.addButton(withTitle: languageManager.local("skip"))
+
+                    let response = alert.runModal()
+
+                    if canMerge {
+                        switch response {
+                        case .alertFirstButtonReturn: action = "merge"
+                        case .alertSecondButtonReturn: action = "replace"
+                        case .alertThirdButtonReturn: action = "keep_both"
+                        default: action = "skip"
+                        }
+                    } else {
+                        switch response {
+                        case .alertFirstButtonReturn: action = "replace"
+                        case .alertSecondButtonReturn: action = "keep_both"
+                        default: action = "skip"
+                        }
+                    }
+
+                    if alert.suppressionButton?.state == .on {
+                        applyToAllAction = action
                     }
                 }
 
