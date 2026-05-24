@@ -734,7 +734,7 @@ class FileManagerService: ObservableObject {
 
                 if let autoAction = applyToAllAction {
                     action = autoAction
-                    if action == "merge" && !canMerge {
+                    if action == "merge", !canMerge {
                         action = "replace"
                     }
                 } else {
@@ -828,7 +828,7 @@ class FileManagerService: ObservableObject {
         }
     }
 
-    private func mergeDirectory(source: URL, destination: URL, isCopy: Bool = false) throws {
+    func mergeDirectory(source: URL, destination: URL, isCopy: Bool = false) throws {
         let contents = try fileManager.contentsOfDirectory(at: source, includingPropertiesForKeys: nil)
         for item in contents {
             let destItem = destination.appendingPathComponent(item.lastPathComponent)
@@ -843,12 +843,27 @@ class FileManagerService: ObservableObject {
                     // Both are directories, recurse
                     try mergeDirectory(source: item, destination: destItem, isCopy: isCopy)
                 } else {
-                    // Conflict, replace destItem with source item
-                    try fileManager.removeItem(at: destItem)
-                    if isCopy {
-                        try fileManager.copyItem(at: item, to: destItem)
-                    } else {
-                        try fileManager.moveItem(at: item, to: destItem)
+                    // File conflict: Compare modification dates, keep the newer one
+                    var shouldReplace = true
+                    do {
+                        let sourceAttrs = try fileManager.attributesOfItem(atPath: item.path)
+                        let destAttrs = try fileManager.attributesOfItem(atPath: destItem.path)
+                        if let sourceDate = sourceAttrs[.modificationDate] as? Date,
+                           let destDate = destAttrs[.modificationDate] as? Date
+                        {
+                            shouldReplace = sourceDate > destDate
+                        }
+                    } catch {
+                        // Fallback to replace if attributes can't be read
+                    }
+
+                    if shouldReplace {
+                        try fileManager.removeItem(at: destItem)
+                        if isCopy {
+                            try fileManager.copyItem(at: item, to: destItem)
+                        } else {
+                            try fileManager.moveItem(at: item, to: destItem)
+                        }
                     }
                 }
             } else {
@@ -922,7 +937,7 @@ class FileManagerService: ObservableObject {
 
                 if let autoAction = applyToAllAction {
                     action = autoAction
-                    if action == "merge" && !canMerge {
+                    if action == "merge", !canMerge {
                         action = "replace"
                     }
                 } else {

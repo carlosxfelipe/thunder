@@ -29,6 +29,8 @@ Gerenciador de arquivos para macOS escrito em Swift com SwiftUI.
 
 ## Integração MCP (IA) 🤖
 
+![Integração MCP](assets/integration.png)
+
 O Thunder possui um servidor embutido do protocolo **MCP (Model Context Protocol)** na porta 8888 (desativado por padrão). Quando ativado nos Ajustes do aplicativo, ele roda de forma silenciosa via Server-Sent Events e atua como uma ponte de **leitura de contexto e navegação visual**, permitindo que assistentes de IA (como Antigravity, Claude Desktop, Cursor e Windsurf) entendam exatamente o que você está visualizando na interface gráfica.
 
 > **Importante:** O MCP do Thunder **não** possui ferramentas de exclusão ou sobrescrita no seu sistema de arquivos. Uma IA maliciosa não consegue usar os privilégios do Thunder para apagar seus arquivos. As interações são limitadas às ações construtivas listadas abaixo!

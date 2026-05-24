@@ -111,6 +111,58 @@ final class ThunderTests {
         #expect(!exists, "The file should be permanently deleted from disk.")
     }
 
+    @Test("Smart Merge Directory - Keep Newer File")
+    func smartMergeDirectory() throws {
+        let sourceFolder = tempDirectory.appendingPathComponent("Source")
+        let destFolder = tempDirectory.appendingPathComponent("Dest")
+        try FileManager.default.createDirectory(at: sourceFolder, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: destFolder, withIntermediateDirectories: true)
+
+        let fileName = "conflict.txt"
+        let sourceFile = sourceFolder.appendingPathComponent(fileName)
+        let destFile = destFolder.appendingPathComponent(fileName)
+
+        try "newer".write(to: sourceFile, atomically: true, encoding: .utf8)
+        try "older".write(to: destFile, atomically: true, encoding: .utf8)
+
+        // Make destFile older
+        let oldDate = Date().addingTimeInterval(-1000)
+        try FileManager.default.setAttributes([.modificationDate: oldDate], ofItemAtPath: destFile.path)
+
+        // Call merge
+        try service.mergeDirectory(source: sourceFolder, destination: destFolder, isCopy: false)
+
+        // Verify destFile was replaced with newer content
+        let content = try String(contentsOf: destFile, encoding: .utf8)
+        #expect(content == "newer", "The older file should be replaced by the newer file during merge.")
+    }
+
+    @Test("Smart Merge Directory - Keep Destination if Newer")
+    func smartMergeDirectoryKeepsNewerDest() throws {
+        let sourceFolder = tempDirectory.appendingPathComponent("Source2")
+        let destFolder = tempDirectory.appendingPathComponent("Dest2")
+        try FileManager.default.createDirectory(at: sourceFolder, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: destFolder, withIntermediateDirectories: true)
+
+        let fileName = "conflict.txt"
+        let sourceFile = sourceFolder.appendingPathComponent(fileName)
+        let destFile = destFolder.appendingPathComponent(fileName)
+
+        try "older".write(to: sourceFile, atomically: true, encoding: .utf8)
+        try "newer".write(to: destFile, atomically: true, encoding: .utf8)
+
+        // Make sourceFile older
+        let oldDate = Date().addingTimeInterval(-1000)
+        try FileManager.default.setAttributes([.modificationDate: oldDate], ofItemAtPath: sourceFile.path)
+
+        // Call merge
+        try service.mergeDirectory(source: sourceFolder, destination: destFolder, isCopy: false)
+
+        // Verify destFile was NOT replaced (kept its newer content)
+        let content = try String(contentsOf: destFile, encoding: .utf8)
+        #expect(content == "newer", "The newer destination file should NOT be replaced by the older source file.")
+    }
+
     @Test("Navigation History")
     func testNavigationHistory() async throws {
         // Wait for FileManagerService.init() async tasks to settle (it loads the home directory asynchronously)
