@@ -16,6 +16,13 @@ public protocol ThunderMCPDelegate: AnyObject {
     func openInThunder(path: String) -> Bool
     func createFile(name: String) -> Bool
     func createFolder(name: String) -> Bool
+    func listDirectoryContents(path: String?) -> [[String: Any]]?
+    func getFileMetadata(path: String) -> [String: Any]?
+    func renameItem(path: String, newName: String) -> Bool
+    func decompressItem(path: String) -> Bool
+    func rotateImage(path: String, degrees: Double, saveAsCopy: Bool) -> String?
+    func resizeImage(path: String, width: Double, height: Double, unit: String, maintainAspectRatio: Bool, saveAsCopy: Bool) -> String?
+    func trashItems(paths: [String]) -> Bool
 }
 
 @MainActor
@@ -91,6 +98,93 @@ public class MCPTools: MCPServerDelegate {
                         "name": ["type": "string"],
                     ],
                     "required": ["name"],
+                ])
+            ),
+            MCPTool(
+                name: "list_directory_contents",
+                description: "Lists all files and folders in a given directory, or the active tab's directory if no path is provided.",
+                inputSchema: AnyCodable([
+                    "type": "object",
+                    "properties": [
+                        "path": ["type": "string"],
+                    ],
+                ])
+            ),
+            MCPTool(
+                name: "get_file_metadata",
+                description: "Returns detailed metadata for a specific file or directory.",
+                inputSchema: AnyCodable([
+                    "type": "object",
+                    "properties": [
+                        "path": ["type": "string"],
+                    ],
+                    "required": ["path"],
+                ])
+            ),
+            MCPTool(
+                name: "rename_item",
+                description: "Renames a file or directory safely.",
+                inputSchema: AnyCodable([
+                    "type": "object",
+                    "properties": [
+                        "path": ["type": "string"],
+                        "newName": ["type": "string"],
+                    ],
+                    "required": ["path", "newName"],
+                ])
+            ),
+            MCPTool(
+                name: "decompress_item",
+                description: "Extracts a ZIP or TAR archive directly.",
+                inputSchema: AnyCodable([
+                    "type": "object",
+                    "properties": [
+                        "path": ["type": "string"],
+                    ],
+                    "required": ["path"],
+                ])
+            ),
+            MCPTool(
+                name: "rotate_image",
+                description: "Rotates an image file native to macOS (90, 180, or 270 degrees) and saves it.",
+                inputSchema: AnyCodable([
+                    "type": "object",
+                    "properties": [
+                        "path": ["type": "string"],
+                        "degrees": ["type": "number"],
+                        "saveAsCopy": ["type": "boolean"],
+                    ],
+                    "required": ["path", "degrees"],
+                ])
+            ),
+            MCPTool(
+                name: "resize_image",
+                description: "Resizes an image file native to macOS and saves it (either overwriting or as a copy).",
+                inputSchema: AnyCodable([
+                    "type": "object",
+                    "properties": [
+                        "path": ["type": "string"],
+                        "width": ["type": "number"],
+                        "height": ["type": "number"],
+                        "unit": ["type": "string", "enum": ["pixels", "percent"]],
+                        "maintainAspectRatio": ["type": "boolean"],
+                        "saveAsCopy": ["type": "boolean"],
+                    ],
+                    "required": ["path", "width", "height"],
+                ])
+            ),
+            MCPTool(
+                name: "trash_items",
+                description: "Moves specified files and directories to the macOS Trash safely.",
+                inputSchema: AnyCodable([
+                    "type": "object",
+                    "properties": [
+                        "paths": [
+                            "type": "array",
+                            "items": ["type": "string"],
+                        ],
+                    ],
+                    "required": ["paths"],
                 ])
             ),
         ]
@@ -226,6 +320,137 @@ public class MCPTools: MCPServerDelegate {
                 return .success(AnyCodable([
                     "content": AnyCodable([
                         AnyCodable(["type": "text", "text": AnyCodable(success ? "Folder created successfully" : "Failed to create folder. Please check if a folder with the same name already exists.")]),
+                    ]),
+                    "isError": AnyCodable(!success),
+                ]))
+
+            case "list_directory_contents":
+                let path = args["path"] as? String
+                if let contents = delegate?.listDirectoryContents(path: path) {
+                    if let jsonData = try? JSONSerialization.data(withJSONObject: contents, options: [.prettyPrinted]),
+                       let jsonString = String(data: jsonData, encoding: .utf8)
+                    {
+                        return .success(AnyCodable([
+                            "content": AnyCodable([
+                                AnyCodable(["type": "text", "text": AnyCodable(jsonString)]),
+                            ]),
+                        ]))
+                    }
+                }
+                return .success(AnyCodable([
+                    "content": AnyCodable([
+                        AnyCodable(["type": "text", "text": AnyCodable("Error: Could not list directory contents.")]),
+                    ]),
+                    "isError": AnyCodable(true),
+                ]))
+
+            case "get_file_metadata":
+                guard let path = args["path"] as? String else {
+                    return .failure(MCPError(code: -32602, message: "Invalid params: Missing path"))
+                }
+                if let metadata = delegate?.getFileMetadata(path: path) {
+                    if let jsonData = try? JSONSerialization.data(withJSONObject: metadata, options: [.prettyPrinted]),
+                       let jsonString = String(data: jsonData, encoding: .utf8)
+                    {
+                        return .success(AnyCodable([
+                            "content": AnyCodable([
+                                AnyCodable(["type": "text", "text": AnyCodable(jsonString)]),
+                            ]),
+                        ]))
+                    }
+                }
+                return .success(AnyCodable([
+                    "content": AnyCodable([
+                        AnyCodable(["type": "text", "text": AnyCodable("Error: Could not get metadata for path: \(path).")]),
+                    ]),
+                    "isError": AnyCodable(true),
+                ]))
+
+            case "rename_item":
+                guard let path = args["path"] as? String,
+                      let newName = args["newName"] as? String
+                else {
+                    return .failure(MCPError(code: -32602, message: "Invalid params: Missing path or newName"))
+                }
+                let success = delegate?.renameItem(path: path, newName: newName) ?? false
+                return .success(AnyCodable([
+                    "content": AnyCodable([
+                        AnyCodable(["type": "text", "text": AnyCodable(success ? "Renamed successfully" : "Failed to rename item. Please make sure the name is valid and the file is not system-protected.")]),
+                    ]),
+                    "isError": AnyCodable(!success),
+                ]))
+
+            case "decompress_item":
+                guard let path = args["path"] as? String else {
+                    return .failure(MCPError(code: -32602, message: "Invalid params: Missing path"))
+                }
+                let success = delegate?.decompressItem(path: path) ?? false
+                return .success(AnyCodable([
+                    "content": AnyCodable([
+                        AnyCodable(["type": "text", "text": AnyCodable(success ? "Archive decompression started/completed successfully." : "Failed to decompress archive. Please check if the file format is supported (ZIP, TAR, TAR.GZ, TAR.BZ2).")]),
+                    ]),
+                    "isError": AnyCodable(!success),
+                ]))
+
+            case "rotate_image":
+                guard let path = args["path"] as? String,
+                      let degreesValue = args["degrees"]
+                else {
+                    return .failure(MCPError(code: -32602, message: "Invalid params: Missing path or degrees"))
+                }
+                let degrees = (degreesValue as? Double) ?? Double(degreesValue as? Int ?? 0)
+                let saveAsCopy = args["saveAsCopy"] as? Bool ?? false
+                if let outputPath = delegate?.rotateImage(path: path, degrees: degrees, saveAsCopy: saveAsCopy) {
+                    return .success(AnyCodable([
+                        "content": AnyCodable([
+                            AnyCodable(["type": "text", "text": AnyCodable("Image rotated successfully and saved to: \(outputPath)")]),
+                        ]),
+                    ]))
+                } else {
+                    return .success(AnyCodable([
+                        "content": AnyCodable([
+                            AnyCodable(["type": "text", "text": AnyCodable("Failed to rotate image.")]),
+                        ]),
+                        "isError": AnyCodable(true),
+                    ]))
+                }
+
+            case "resize_image":
+                guard let path = args["path"] as? String,
+                      let widthValue = args["width"],
+                      let heightValue = args["height"]
+                else {
+                    return .failure(MCPError(code: -32602, message: "Invalid params: Missing path, width, or height"))
+                }
+                let width = (widthValue as? Double) ?? Double(widthValue as? Int ?? 0)
+                let height = (heightValue as? Double) ?? Double(heightValue as? Int ?? 0)
+                let unit = args["unit"] as? String ?? "pixels"
+                let maintainAspectRatio = args["maintainAspectRatio"] as? Bool ?? true
+                let saveAsCopy = args["saveAsCopy"] as? Bool ?? false
+
+                if let outputPath = delegate?.resizeImage(path: path, width: width, height: height, unit: unit, maintainAspectRatio: maintainAspectRatio, saveAsCopy: saveAsCopy) {
+                    return .success(AnyCodable([
+                        "content": AnyCodable([
+                            AnyCodable(["type": "text", "text": AnyCodable("Image resized successfully and saved to: \(outputPath)")]),
+                        ]),
+                    ]))
+                } else {
+                    return .success(AnyCodable([
+                        "content": AnyCodable([
+                            AnyCodable(["type": "text", "text": AnyCodable("Failed to resize image.")]),
+                        ]),
+                        "isError": AnyCodable(true),
+                    ]))
+                }
+
+            case "trash_items":
+                guard let paths = args["paths"] as? [String] else {
+                    return .failure(MCPError(code: -32602, message: "Invalid params: Missing paths"))
+                }
+                let success = delegate?.trashItems(paths: paths) ?? false
+                return .success(AnyCodable([
+                    "content": AnyCodable([
+                        AnyCodable(["type": "text", "text": AnyCodable(success ? "Items moved to Trash successfully." : "Failed to move one or more items to Trash. Verify if files exist and are not system-protected.")]),
                     ]),
                     "isError": AnyCodable(!success),
                 ]))

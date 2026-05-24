@@ -33,12 +33,22 @@ Gerenciador de arquivos para macOS escrito em Swift com SwiftUI.
 
 O Thunder possui um servidor embutido do protocolo **MCP (Model Context Protocol)** na porta 8888 (desativado por padrão). Quando ativado nos Ajustes do aplicativo, ele roda de forma silenciosa via Server-Sent Events e atua como uma ponte de **leitura de contexto e navegação visual**, permitindo que assistentes de IA (como Antigravity, Claude Desktop, Cursor e Windsurf) entendam exatamente o que você está visualizando na interface gráfica.
 
-> **Importante:** O MCP do Thunder **não** possui ferramentas de exclusão ou sobrescrita no seu sistema de arquivos. Uma IA maliciosa não consegue usar os privilégios do Thunder para apagar seus arquivos. As interações são limitadas às ações construtivas listadas abaixo!
+> **Importante:** Por questões de segurança, o MCP do Thunder **não** possui ferramentas de exclusão permanente destrutiva. Ações de descarte são mapeadas exclusivamente para a Lixeira nativa do macOS (`trash_items`), o que garante a segurança dos seus dados contra acidentes!
 
 **Ferramentas MCP disponíveis nativamente no Thunder:**
-- **Ler o contexto da UI:** A IA consegue perguntar qual pasta está aberta na aba ativa (`get_active_tab_path`) e quais arquivos você selecionou com o mouse (`get_selected_files`).
-- **Navegação remota:** A IA consegue fazer a sua interface gráfica pular automaticamente para uma pasta específica (`open_in_thunder`).
-- **Ações nativas do App:** A IA pode acionar funções exclusivas da interface do Thunder, como mover itens e gerar feedback visual instantâneo (`move_files`), compactar arquivos (`compress_items`) ou criar arquivos e pastas vazias na sua aba ativa atual (`create_file` e `create_folder`).
+- **Ler o contexto e metadados da UI:**
+  - `get_active_tab_path`: Retorna o caminho absoluto do diretório aberto na aba ativa.
+  - `get_selected_files`: Retorna a lista de caminhos absolutos dos arquivos atualmente selecionados.
+  - `list_directory_contents`: Lista detalhadamente os arquivos, tamanhos, datas e tags do diretório informado ou da aba ativa.
+  - `get_file_metadata`: Fornece metadados detalhados (tamanho formatado, datas ISO8601, estado oculto, se é imagem ou arquivo protegido).
+- **Navegação remota:**
+  - `open_in_thunder`: Navega visualmente na interface gráfica para uma pasta ou arquivo específico.
+- **Ações e manipulações nativas:**
+  - `move_files` / `rename_item`: Move arquivos em lote ou renomeia itens com atualização visual instantânea da UI.
+  - `create_file` / `create_folder`: Cria arquivos ou diretórios vazios na aba ativa atual.
+  - `compress_items` / `decompress_item`: Compacta múltiplos arquivos (ZIP/TAR.GZ) ou descompacta arquivos suportados na UI.
+  - `rotate_image` / `resize_image`: Executa operações nativas de rotação (90°, 180°, 270°) e redimensionamento de imagens (em pixels ou %) usando CoreImage e CoreGraphics no macOS.
+  - `trash_items`: Move uma lista de arquivos de forma segura para a Lixeira do macOS com mensagens de status localizadas na UI.
 
 ## Instalação via Homebrew 🍺
 

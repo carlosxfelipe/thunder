@@ -5,11 +5,13 @@
 //  Created by Carlos Felipe Araújo on 23/05/26.
 //
 
+import AppKit
 import Foundation
 import Testing
 @testable import Thunder
 
 @MainActor
+@Suite(.serialized)
 final class ThunderTests {
     var service: FileManagerService
     var tempDirectory: URL
@@ -211,5 +213,120 @@ final class ThunderTests {
         service.navigateToParent()
         try await Task.sleep(nanoseconds: 50_000_000)
         #expect(service.currentDirectory.standardizedFileURL == tempDirectory.standardizedFileURL)
+    }
+
+    @Test("Test All MCP Server Tools")
+    func allMCPTools() async throws {
+        let tabManager = TabManagerService()
+        // Wait for it to initialize, then navigate to sandboxed tempDirectory
+        try await Task.sleep(nanoseconds: 50_000_000)
+        tabManager.activeFileManager?.navigateTo(tempDirectory)
+        try await Task.sleep(nanoseconds: 100_000_000)
+
+        ThunderMCPManager.shared.activeTabManager = tabManager
+
+        // 1. Test getActiveTabPath
+        let activePath = ThunderMCPManager.shared.getActiveTabPath()
+        #expect(activePath != nil, "getActiveTabPath should return active path.")
+
+        // 2. Test createFile & createFolder
+        let folderName = "mcp_folder"
+        let file1Name = "mcp_file1.txt"
+        let file2Name = "mcp_file2.txt"
+
+        let createdFolder = ThunderMCPManager.shared.createFolder(name: folderName)
+        let createdFile1 = ThunderMCPManager.shared.createFile(name: file1Name)
+        let createdFile2 = ThunderMCPManager.shared.createFile(name: file2Name)
+
+        #expect(createdFolder == true)
+        #expect(createdFile1 == true)
+        #expect(createdFile2 == true)
+
+        let folderURL = tempDirectory.appendingPathComponent(folderName)
+        let file1URL = tempDirectory.appendingPathComponent(file1Name)
+        let file2URL = tempDirectory.appendingPathComponent(file2Name)
+
+        #expect(FileManager.default.fileExists(atPath: folderURL.path))
+        #expect(FileManager.default.fileExists(atPath: file1URL.path))
+        #expect(FileManager.default.fileExists(atPath: file2URL.path))
+
+        // 3. Test listDirectoryContents
+        let contents = ThunderMCPManager.shared.listDirectoryContents(path: tempDirectory.path)
+        #expect(contents != nil)
+        #expect(contents?.count ?? 0 >= 3)
+
+        // 4. Test getFileMetadata
+        let metadata = ThunderMCPManager.shared.getFileMetadata(path: file1URL.path)
+        #expect(metadata != nil)
+        #expect(metadata?["name"] as? String == file1Name)
+        #expect(metadata?["isDirectory"] as? Bool == false)
+
+        // 5. Test renameItem
+        let renamedName = "mcp_file1_renamed.txt"
+        let renamedURL = tempDirectory.appendingPathComponent(renamedName)
+        let renameSuccess = ThunderMCPManager.shared.renameItem(path: file1URL.path, newName: renamedName)
+        #expect(renameSuccess == true)
+        #expect(!FileManager.default.fileExists(atPath: file1URL.path))
+        #expect(FileManager.default.fileExists(atPath: renamedURL.path))
+
+        // 6. Test openInThunder
+        let openSuccess = ThunderMCPManager.shared.openInThunder(path: folderURL.path)
+        #expect(openSuccess == true)
+
+        // 7. Test getSelectedFiles (mock selection)
+        tabManager.activeFileManager?.selectedURLs = [file2URL]
+        let selected = ThunderMCPManager.shared.getSelectedFiles()
+        #expect(selected.contains(file2URL.path))
+
+        // 8. Test compressItems & decompressItem
+        let zipName = "mcp_file2.txt.zip"
+        let zipURL = tempDirectory.appendingPathComponent(zipName)
+        let compressSuccess = ThunderMCPManager.shared.compressItems(paths: [file2URL.path], format: "zip")
+        #expect(compressSuccess == true)
+
+        // Give compression task a moment to finish on system process
+        try await Task.sleep(nanoseconds: 500_000_000)
+        #expect(FileManager.default.fileExists(atPath: zipURL.path))
+
+        // Decompress ZIP using decompressItem
+        let decompressSuccess = ThunderMCPManager.shared.decompressItem(path: zipURL.path)
+        #expect(decompressSuccess == true)
+        try await Task.sleep(nanoseconds: 500_000_000)
+
+        // 9. Test rotateImage & resizeImage with real 1x1 image
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let context = CGContext(data: nil, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4, space: colorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        let cgImage = context?.makeImage()
+        let imageURL = tempDirectory.appendingPathComponent("test_image.png")
+
+        if let cgImage = cgImage {
+            let rep = NSBitmapImageRep(cgImage: cgImage)
+            let pngData = rep.representation(using: .png, properties: [:])
+            try? pngData?.write(to: imageURL)
+        }
+
+        #expect(FileManager.default.fileExists(atPath: imageURL.path))
+
+        // Rotate image 90 degrees
+        let rotatedPath = ThunderMCPManager.shared.rotateImage(path: imageURL.path, degrees: 90, saveAsCopy: true)
+        #expect(rotatedPath != nil)
+        #expect(FileManager.default.fileExists(atPath: rotatedPath!))
+
+        // Resize image to 2x2 pixels
+        let resizedPath = ThunderMCPManager.shared.resizeImage(path: imageURL.path, width: 2, height: 2, unit: "pixels", maintainAspectRatio: false, saveAsCopy: true)
+        #expect(resizedPath != nil)
+        #expect(FileManager.default.fileExists(atPath: resizedPath!))
+
+        // 10. Test moveFiles (move renamed file into folder)
+        let targetFileInFolder = folderURL.appendingPathComponent(renamedName)
+        let moveSuccess = ThunderMCPManager.shared.moveFiles(sourcePaths: [renamedURL.path], targetDir: folderURL.path)
+        #expect(moveSuccess == true)
+        #expect(!FileManager.default.fileExists(atPath: renamedURL.path))
+        #expect(FileManager.default.fileExists(atPath: targetFileInFolder.path))
+
+        // 11. Test trashItems (move test_image.png to Trash safely)
+        let trashSuccess = ThunderMCPManager.shared.trashItems(paths: [imageURL.path])
+        #expect(trashSuccess == true)
+        #expect(!FileManager.default.fileExists(atPath: imageURL.path))
     }
 }
