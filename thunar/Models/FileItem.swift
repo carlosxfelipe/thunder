@@ -94,9 +94,21 @@ struct FileItem: Identifiable, Hashable {
         return ((permissions?.uint16Value ?? 0) & 0o111) != 0
     }
 
+    var isInTCCProtectedDirectory: Bool {
+        let path = url.standardizedFileURL.path.lowercased()
+        let home = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL.path.lowercased()
+        let protectedPaths = [
+            "\(home)/desktop",
+            "\(home)/documents",
+            "\(home)/downloads"
+        ]
+        return protectedPaths.contains { path.hasPrefix($0) }
+    }
+
     var isScript: Bool {
         guard !isDirectory else { return false }
-        let scriptExtensions = ["sh", "py", "command", "pl", "rb", "js", "bash", "zsh"]
+        if isInTCCProtectedDirectory { return false }
+        let scriptExtensions = ["sh", "py", "command", "pl", "rb", "js", "bash", "zsh", "ts"]
         return scriptExtensions.contains(url.pathExtension.lowercased())
     }
 }

@@ -7,6 +7,7 @@
 
 import AppKit
 import Foundation
+import Network
 import Testing
 @testable import Thunder
 
@@ -355,5 +356,60 @@ final class ThunderTests {
 
         let revertedItem = FileItem(url: fileURL)
         #expect(revertedItem.isExecutable == false, "Should no longer be executable.")
+    }
+
+    @Test("Test MCP Server Localhost Binding")
+    func testMCPServerLocalhostBinding() async throws {
+        let testPort: UInt16 = 8899
+        let server = MCPServer(port: testPort)
+        try server.start()
+        defer { server.stop() }
+
+        actor ConnectionState {
+            var didResume = false
+            func tryResume(with continuation: CheckedContinuation<Bool, Never>, value: Bool) {
+                if !didResume {
+                    didResume = true
+                    continuation.resume(returning: value)
+                }
+            }
+        }
+
+        let state = ConnectionState()
+
+        let connected = await withCheckedContinuation { continuation in
+            let localConnection = NWConnection(
+                host: "127.0.0.1",
+                port: NWEndpoint.Port(rawValue: testPort)!,
+                using: .tcp
+            )
+            
+            localConnection.stateUpdateHandler = { newState in
+                switch newState {
+                case .ready:
+                    Task {
+                        await state.tryResume(with: continuation, value: true)
+                    }
+                    localConnection.cancel()
+                case .failed:
+                    Task {
+                        await state.tryResume(with: continuation, value: false)
+                    }
+                default:
+                    break
+                }
+            }
+            localConnection.start(queue: .global())
+            
+            // Timeout safety (2 seconds)
+            DispatchQueue.global().asyncAfter(deadline: .now() + 2.0) {
+                Task {
+                    await state.tryResume(with: continuation, value: false)
+                }
+                localConnection.cancel()
+            }
+        }
+        
+        #expect(connected == true, "Should be able to connect to MCP Server via loopback (127.0.0.1)")
     }
 }

@@ -60,6 +60,20 @@ public class MCPServer {
     }
 
     private func handleNewConnection(_ connection: NWConnection) {
+        // Strictly filter connections to only allow localhost
+        let remoteEndpoint = connection.endpoint
+        if case let .hostPort(host, _) = remoteEndpoint {
+            let hostStr = "\(host)"
+            if hostStr != "127.0.0.1" && hostStr != "::1" && hostStr != "localhost" {
+                print("Rejected connection from unauthorized host: \(hostStr)")
+                connection.cancel()
+                return
+            }
+        } else {
+            connection.cancel()
+            return
+        }
+
         let id = ObjectIdentifier(connection)
         queue.async { [weak self] in
             guard let self = self else { return }
@@ -151,7 +165,7 @@ public class MCPServer {
                 handleJSONRPC(bodyData, connection: connection)
 
                 // Respond to POST
-                let response = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: keep-alive\r\nAccess-Control-Allow-Origin: *\r\n\r\n"
+                let response = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: keep-alive\r\n\r\n"
                 connection.send(content: response.data(using: .utf8), completion: .contentProcessed { _ in })
             } else {
                 // Respond to unknown route with 404
@@ -169,7 +183,6 @@ public class MCPServer {
         Content-Type: text/event-stream\r
         Cache-Control: no-cache\r
         Connection: keep-alive\r
-        Access-Control-Allow-Origin: *\r
         \r\n
         """
 
@@ -236,4 +249,5 @@ public class MCPServer {
             }
         }
     }
+
 }
