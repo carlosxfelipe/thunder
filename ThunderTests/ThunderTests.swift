@@ -359,7 +359,7 @@ final class ThunderTests {
     }
 
     @Test("Test MCP Server Localhost Binding")
-    func testMCPServerLocalhostBinding() async throws {
+    func mCPServerLocalhostBinding() async throws {
         let testPort: UInt16 = 8899
         let server = MCPServer(port: testPort)
         try server.start()
@@ -383,7 +383,7 @@ final class ThunderTests {
                 port: NWEndpoint.Port(rawValue: testPort)!,
                 using: .tcp
             )
-            
+
             localConnection.stateUpdateHandler = { newState in
                 switch newState {
                 case .ready:
@@ -400,7 +400,7 @@ final class ThunderTests {
                 }
             }
             localConnection.start(queue: .global())
-            
+
             // Timeout safety (2 seconds)
             DispatchQueue.global().asyncAfter(deadline: .now() + 2.0) {
                 Task {
@@ -409,7 +409,7 @@ final class ThunderTests {
                 localConnection.cancel()
             }
         }
-        
+
         #expect(connected == true, "Should be able to connect to MCP Server via loopback (127.0.0.1)")
     }
 }

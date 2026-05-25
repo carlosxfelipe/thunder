@@ -64,7 +64,7 @@ public class MCPServer {
         let remoteEndpoint = connection.endpoint
         if case let .hostPort(host, _) = remoteEndpoint {
             let hostStr = "\(host)"
-            if hostStr != "127.0.0.1" && hostStr != "::1" && hostStr != "localhost" {
+            if hostStr != "127.0.0.1", hostStr != "::1", hostStr != "localhost" {
                 print("Rejected connection from unauthorized host: \(hostStr)")
                 connection.cancel()
                 return
@@ -249,5 +249,4 @@ public class MCPServer {
             }
         }
     }
-
 }

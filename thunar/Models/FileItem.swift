@@ -100,7 +100,7 @@ struct FileItem: Identifiable, Hashable {
         let protectedPaths = [
             "\(home)/desktop",
             "\(home)/documents",
-            "\(home)/downloads"
+            "\(home)/downloads",
         ]
         return protectedPaths.contains { path.hasPrefix($0) }
     }
