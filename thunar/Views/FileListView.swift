@@ -484,6 +484,20 @@ struct FileListView: View {
                         Label(languageManager.local("resize"), systemImage: "arrow.up.backward.and.arrow.down.forward")
                     }
                 }
+                if !item.isDirectory && items.count == 1 {
+                    Divider()
+                    if item.isScript && item.isExecutable {
+                        Button(action: { fileManager.runScriptInTerminal(item) }) {
+                            Label(languageManager.local("run_script"), systemImage: "play.circle")
+                        }
+                    }
+                    Button(action: { fileManager.toggleExecutionPermission(for: item) }) {
+                        Label(
+                            item.isExecutable ? languageManager.local("remove_executable") : languageManager.local("make_executable"),
+                            systemImage: item.isExecutable ? "xmark.circle" : "checkmark.circle"
+                        )
+                    }
+                }
                 if item.isDirectory && items.count == 1 {
                     Button(action: { fileManager.openInTerminal(url: item.url) }) {
                         Label(languageManager.local("open_terminal"), systemImage: "terminal")
@@ -831,6 +845,20 @@ struct FileListView: View {
             }
             Button(action: { resizingItem = item }) {
                 Label(languageManager.local("resize"), systemImage: "arrow.up.backward.and.arrow.down.forward")
+            }
+        }
+        if !item.isDirectory && contextItems(for: item).count == 1 {
+            Divider()
+            if item.isScript && item.isExecutable {
+                Button(action: { fileManager.runScriptInTerminal(item) }) {
+                    Label(languageManager.local("run_script"), systemImage: "play.circle")
+                }
+            }
+            Button(action: { fileManager.toggleExecutionPermission(for: item) }) {
+                Label(
+                    item.isExecutable ? languageManager.local("remove_executable") : languageManager.local("make_executable"),
+                    systemImage: item.isExecutable ? "xmark.circle" : "checkmark.circle"
+                )
             }
         }
         if item.isDirectory && (!selectedFileIDs.contains(item.id) || selectedFileIDs.count == 1) {

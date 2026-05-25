@@ -1056,6 +1056,43 @@ class FileManagerService: ObservableObject {
         try? process.run()
     }
 
+    func toggleExecutionPermission(for item: FileItem) {
+        let path = item.url.path
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: path),
+              let permissions = attrs[.posixPermissions] as? NSNumber
+        else {
+            return
+        }
+
+        let currentPermissions = permissions.uint16Value
+        let isExec = (currentPermissions & 0o111) != 0
+
+        let newPermissions: UInt16
+        if isExec {
+            newPermissions = currentPermissions & ~0o111
+        } else {
+            newPermissions = currentPermissions | 0o111
+        }
+
+        do {
+            try FileManager.default.setAttributes([.posixPermissions: NSNumber(value: newPermissions)], ofItemAtPath: path)
+            loadDirectory()
+        } catch {
+            errorMessage = "Erro ao alterar privilégios: \(error.localizedDescription)"
+        }
+    }
+
+    func runScriptInTerminal(_ item: FileItem) {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        process.arguments = ["-a", "Terminal", item.url.path]
+        do {
+            try process.run()
+        } catch {
+            errorMessage = "Erro ao executar script: \(error.localizedDescription)"
+        }
+    }
+
     var canGoBack: Bool {
         historyIndex > 0
     }

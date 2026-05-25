@@ -20,6 +20,7 @@ Gerenciador de arquivos para macOS escrito em Swift com SwiftUI.
   - Formatação rápida de texto para **TUDO MAIÚSCULO**, **tudo minúsculo** ou **Primeira Letra Maiúscula**
 - Comprimir arquivos e pastas com suporte a múltiplos formatos (**ZIP**, **TAR.GZ** e **TAR.BZ2**)
 - Rotacionar e redimensionar imagens nativamente (com opção de aplicar no arquivo original ou criar uma cópia modificada)
+- Gestão rápida de privilégios de execução (chmod +x/-x) e execução interativa de scripts (como .sh, .py, .js e .command) no Terminal pelo menu de contexto
 - Quick Look (barra de espaço)
 - Etiquetas coloridas (compatível com Finder)
 - Mostrar/ocultar arquivos ocultos

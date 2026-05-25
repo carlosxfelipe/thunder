@@ -86,4 +86,17 @@ struct FileItem: Identifiable, Hashable {
         }
         return false
     }
+
+    var isExecutable: Bool {
+        guard !isDirectory else { return false }
+        let attrs = try? FileManager.default.attributesOfItem(atPath: url.path)
+        let permissions = attrs?[.posixPermissions] as? NSNumber
+        return ((permissions?.uint16Value ?? 0) & 0o111) != 0
+    }
+
+    var isScript: Bool {
+        guard !isDirectory else { return false }
+        let scriptExtensions = ["sh", "py", "command", "pl", "rb", "js", "bash", "zsh"]
+        return scriptExtensions.contains(url.pathExtension.lowercased())
+    }
 }

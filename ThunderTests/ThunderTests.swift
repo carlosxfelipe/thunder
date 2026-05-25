@@ -329,4 +329,31 @@ final class ThunderTests {
         #expect(trashSuccess == true)
         #expect(!FileManager.default.fileExists(atPath: imageURL.path))
     }
+
+    @Test("Test file execution permission toggling")
+    func testToggleExecutionPermission() {
+        let fileName = "test_script_toggle.sh"
+        service.createFile(name: fileName)
+
+        let fileURL = tempDirectory.appendingPathComponent(fileName)
+        let item = FileItem(url: fileURL)
+
+        // 1. Initial state (should not be executable by default)
+        #expect(item.isScript == true, "Should be recognized as a script.")
+        #expect(item.isExecutable == false, "Should not be executable initially.")
+
+        // 2. Toggle to make it executable (+x)
+        service.toggleExecutionPermission(for: item)
+        #expect(service.errorMessage == nil)
+
+        let updatedItem = FileItem(url: fileURL)
+        #expect(updatedItem.isExecutable == true, "Should now be executable.")
+
+        // 3. Toggle to remove execution permission (-x)
+        service.toggleExecutionPermission(for: updatedItem)
+        #expect(service.errorMessage == nil)
+
+        let revertedItem = FileItem(url: fileURL)
+        #expect(revertedItem.isExecutable == false, "Should no longer be executable.")
+    }
 }
