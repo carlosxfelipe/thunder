@@ -21,14 +21,15 @@ Gerenciador de arquivos para macOS escrito em Swift com SwiftUI.
 - Comprimir arquivos e pastas com suporte a múltiplos formatos (**ZIP**, **TAR.GZ** e **TAR.BZ2**)
 - Rotacionar e redimensionar imagens nativamente (com opção de aplicar no arquivo original ou criar uma cópia modificada)
 - Gestão rápida de privilégios de execução (chmod +x/-x) e execução interativa de scripts (como .sh, .py, .js e .command) no Terminal pelo menu de contexto
-  > [!TIP]
-  > **Nota sobre Execução de Scripts:** Para que scripts interpretados (como Python `.py` ou Node.js `.js`) sejam executados corretamente através do menu de contexto do Thunder (que os abre de forma interativa no Terminal), eles **precisam** conter a instrução **Shebang** na primeiríssima linha (ex: `#!/usr/bin/env python3` ou `#!/usr/bin/env node`) e ter permissão de execução ativa (`chmod +x`). Sem a shebang, o terminal do macOS tentará rodar o código usando o interpretador do shell padrão (`zsh` ou `bash`), gerando erros de sintaxe (como `syntax error near unexpected token '('` no Python).
 - Quick Look (barra de espaço)
 - Etiquetas coloridas (compatível com Finder)
 - Mostrar/ocultar arquivos ocultos
 - Abrir no Terminal
 - Painel de armazenamento inteligente nos Ajustes que monitora em tempo real o espaço total, utilizado e disponível de todos os discos internos e externos conectados no Mac
 - Suporte a múltiplos idiomas (Português, Inglês e Espanhol)
+
+> [!TIP]
+> **Nota sobre Execução de Scripts:** Para que scripts interpretados (como Python `.py` ou Node.js `.js`) sejam executados corretamente através do menu de contexto do Thunder (que os abre de forma interativa no Terminal), eles **precisam** conter a instrução **Shebang** na primeiríssima linha (ex: `#!/usr/bin/env python3` ou `#!/usr/bin/env node`) e ter permissão de execução ativa (`chmod +x`). Sem a shebang, o terminal do macOS tentará rodar o código usando o interpretador do shell padrão (`zsh` ou `bash`), gerando erros de sintaxe (como `syntax error near unexpected token '('` no Python).
 
 ## Integração MCP (IA) 🤖
 
