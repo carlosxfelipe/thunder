@@ -484,9 +484,9 @@ struct FileListView: View {
                         Label(languageManager.local("resize"), systemImage: "arrow.up.backward.and.arrow.down.forward")
                     }
                 }
-                if !item.isDirectory && items.count == 1 {
+                if item.isScript && items.count == 1 {
                     Divider()
-                    if item.isScript && item.isExecutable {
+                    if item.isExecutable {
                         Button(action: { fileManager.runScriptInTerminal(item) }) {
                             Label(languageManager.local("run_script"), systemImage: "play.circle")
                         }
@@ -847,9 +847,9 @@ struct FileListView: View {
                 Label(languageManager.local("resize"), systemImage: "arrow.up.backward.and.arrow.down.forward")
             }
         }
-        if !item.isDirectory && contextItems(for: item).count == 1 {
+        if item.isScript && contextItems(for: item).count == 1 {
             Divider()
-            if item.isScript && item.isExecutable {
+            if item.isExecutable {
                 Button(action: { fileManager.runScriptInTerminal(item) }) {
                     Label(languageManager.local("run_script"), systemImage: "play.circle")
                 }
