@@ -33,28 +33,6 @@ Gerenciador de arquivos para macOS escrito em Swift com SwiftUI.
 > 1. **Requisitos:** Devem conter a **Shebang** na primeiríssima linha (ex: `#!/usr/bin/env bun` ou `#!/usr/bin/env python3`) e permissão de execução ativa (`chmod +x`).
 > 2. **Privacidade do macOS:** O Terminal herda as permissões do app. Para evitar falhas silenciosas de permissão, o Thunder oculta a opção de execução em pastas protegidas (Desktop, Documentos, Downloads). Execute seus scripts sempre a partir de diretórios livres (ex: `/Users/seu-usuario/Desenvolvimento`).
 
-## Integração MCP (IA) 🤖
-
-![Integração MCP](assets/integration.png)
-
-O Thunder possui um servidor embutido do protocolo **MCP (Model Context Protocol)** na porta 8888 (desativado por padrão). Quando ativado nos Ajustes do aplicativo, ele roda de forma silenciosa via Server-Sent Events e atua como uma ponte de **leitura de contexto e navegação visual**, permitindo que assistentes de IA (como Antigravity, Claude Desktop, Cursor e Windsurf) entendam exatamente o que você está visualizando na interface gráfica.
-
-> **Importante:** Por questões de segurança, o MCP do Thunder **não** possui ferramentas de exclusão permanente destrutiva. Ações de descarte são mapeadas exclusivamente para a Lixeira nativa do macOS (`trash_items`), o que garante a segurança dos seus dados contra acidentes!
-
-**Ferramentas MCP disponíveis nativamente no Thunder:**
-- **Ler o contexto e metadados da UI:**
-  - `get_active_tab_path`: Retorna o caminho absoluto do diretório aberto na aba ativa.
-  - `get_selected_files`: Retorna a lista de caminhos absolutos dos arquivos atualmente selecionados.
-  - `list_directory_contents`: Lista detalhadamente os arquivos, tamanhos, datas e tags do diretório informado ou da aba ativa.
-  - `get_file_metadata`: Fornece metadados detalhados (tamanho formatado, datas ISO8601, estado oculto, se é imagem ou arquivo protegido).
-- **Navegação remota:**
-  - `open_in_thunder`: Navega visualmente na interface gráfica para uma pasta ou arquivo específico.
-- **Ações e manipulações nativas:**
-  - `move_files` / `rename_item`: Move arquivos em lote ou renomeia itens com atualização visual instantânea da UI.
-  - `create_file` / `create_folder`: Cria arquivos ou diretórios vazios na aba ativa atual.
-  - `compress_items` / `decompress_item`: Compacta múltiplos arquivos (ZIP/TAR.GZ) ou descompacta arquivos suportados na UI.
-  - `rotate_image` / `resize_image`: Executa operações nativas de rotação (90°, 180°, 270°) e redimensionamento de imagens (em pixels ou %) usando CoreImage e CoreGraphics no macOS.
-  - `trash_items`: Move uma lista de arquivos de forma segura para a Lixeira do macOS com mensagens de status localizadas na UI.
 
 ## Instalação via Homebrew 🍺
 

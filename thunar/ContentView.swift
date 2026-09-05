@@ -63,9 +63,7 @@ struct ContentView: View {
             }
             .opacity(0)
         )
-        .onAppear {
-            ThunderMCPManager.shared.activeTabManager = tabManager
-        }
+        .onAppear {}
     }
 
     private var currentFileManager: FileManagerService {
