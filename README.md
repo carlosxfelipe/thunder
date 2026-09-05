@@ -1,53 +1,52 @@
 # Thunder
 
-Gerenciador de arquivos para macOS escrito em Swift com SwiftUI.
+macOS file manager written in Swift with SwiftUI.
 
 ![Thunder Screenshot](assets/screenshot.png)
 
-> **Nota:** este projeto iniciou como um repositório privado com o nome **Thunar** usado provisoriamente durante o desenvolvimento inicial.
+> **Note:** this project started as a private repository with the name **Thunar** used provisionally during initial development.
 >
-> Inspirado no Thunar do XFCE, sem qualquer vínculo com o projeto original.
+> Inspired by XFCE's Thunar, without any link to the original project.
 
-## Funcionalidades
+## Features
 
-- Navegação com abas
-- Modo lista e modo ícones
-- Arrastar e soltar (Drag and Drop) de arquivos e pastas com suporte a seleção múltipla
-- Copiar, recortar e colar
-- Renomeação inteligente e segura:
-  - Divisão vertical clara entre o nome base do arquivo e sua extensão
-  - Proteção ativa com cadeado para evitar alterações ou exclusões acidentais da extensão
-  - Formatação rápida de texto para **TUDO MAIÚSCULO**, **tudo minúsculo** ou **Primeira Letra Maiúscula**
-- Comprimir arquivos e pastas com suporte a múltiplos formatos (**ZIP**, **TAR.GZ** e **TAR.BZ2**)
-- Rotacionar e redimensionar imagens nativamente (com opção de aplicar no arquivo original ou criar uma cópia modificada)
-- Gestão rápida de privilégios de execução (chmod +x/-x) e execução interativa de scripts (como .sh, .py, .js, .ts e .command) no Terminal pelo menu de contexto
-- Quick Look (barra de espaço)
-- Etiquetas coloridas (compatível com Finder)
-- Mostrar/ocultar arquivos ocultos
-- Abrir no Terminal
-- Painel de armazenamento inteligente nos Ajustes que monitora em tempo real o espaço total, utilizado e disponível de todos os discos internos e externos conectados no Mac
-- Suporte a múltiplos idiomas (Português, Inglês e Espanhol)
+- Tabbed navigation
+- List mode and icon mode
+- Drag and Drop for files and folders with multiple selection support
+- Copy, cut, and paste
+- Smart and secure renaming:
+  - Clear vertical division between the file's base name and its extension
+  - Active lock protection to prevent accidental changes or deletion of the extension
+  - Quick text formatting for **ALL CAPS**, **all lowercase** or **Capitalize First Letter**
+- Compress files and folders with support for multiple formats (**ZIP**, **TAR.GZ** and **TAR.BZ2**)
+- Natively rotate and resize images (with the option to apply to the original file or create a modified copy)
+- Quick management of execution privileges (chmod +x/-x) and interactive execution of scripts (like .sh, .py, .js, .ts, and .command) in the Terminal via context menu
+- Quick Look (space bar)
+- Colored tags (Finder compatible)
+- Show/hide hidden files
+- Open in Terminal
+- Smart storage panel in Settings that monitors total, used, and available space of all internal and connected external drives on the Mac in real-time
+- Multi-language support (Portuguese, English, and Spanish)
 
 > [!TIP]
-> **Execução de Scripts (Python, JS, TS):**
-> 1. **Requisitos:** Devem conter a **Shebang** na primeiríssima linha (ex: `#!/usr/bin/env bun` ou `#!/usr/bin/env python3`) e permissão de execução ativa (`chmod +x`).
-> 2. **Privacidade do macOS:** O Terminal herda as permissões do app. Para evitar falhas silenciosas de permissão, o Thunder oculta a opção de execução em pastas protegidas (Desktop, Documentos, Downloads). Execute seus scripts sempre a partir de diretórios livres (ex: `/Users/seu-usuario/Desenvolvimento`).
+> **Script Execution (Python, JS, TS):**
+> 1. **Requirements:** Must contain the **Shebang** on the very first line (e.g., `#!/usr/bin/env bun` or `#!/usr/bin/env python3`) and active execution permission (`chmod +x`).
+> 2. **macOS Privacy:** The Terminal inherits the app's permissions. To avoid silent permission failures, Thunder hides the execution option in protected folders (Desktop, Documents, Downloads). Always execute your scripts from free directories (e.g., `/Users/your-user/Development`).
 
+## Installation via Homebrew 🍺
 
-## Instalação via Homebrew 🍺
-
-Se você utiliza o [Homebrew](https://brew.sh/), pode instalar o Thunder de forma extremamente simples com um único comando no terminal:
+If you use [Homebrew](https://brew.sh/), you can install Thunder very easily with a single terminal command:
 
 ```bash
 brew install carlosxfelipe/tap/thunder
 ```
 
-## Requisitos
+## Requirements
 
-- macOS 14.0 (Sonoma) ou superior
-- Xcode 15 ou superior
+- macOS 14.0 (Sonoma) or higher
+- Xcode 15 or higher
 
-## Como rodar
+## How to run
 
 ```bash
 git clone https://github.com/carlosxfelipe/thunar.git
@@ -55,104 +54,104 @@ cd thunar
 open thunar.xcodeproj
 ```
 
-No Xcode, selecione o target `thunar` e clique em Run (Cmd+R).
+In Xcode, select the `thunar` target and click Run (Cmd+R).
 
-## Testes Automatizados
+## Automated Tests
 
-O projeto inclui uma suíte de testes unitários super rápida para garantir a estabilidade das operações centrais do gerenciador de arquivos (criação de pastas/arquivos, proteção contra duplicatas, renomeação, exclusão permanente e a pilha de histórico de navegação). 
+The project includes a super-fast unit test suite to ensure the stability of the core file manager operations (folder/file creation, duplicate protection, renaming, permanent deletion, and navigation history stack). 
 
-Para rodar todos os testes pelo terminal, utilize o script:
+To run all tests via terminal, use the script:
 
 ```bash
 ./scripts/run_tests.sh
 ```
 
-## Build de distribuição (.dmg)
+## Distribution Build (.dmg)
 
-Para gerar um instalador no estilo "arraste para a pasta Aplicativos":
+To generate a "drag to Applications folder" style installer:
 
-```
+```bash
 ./scripts/build-dmg.sh
 ```
 
-O arquivo `Thunder.dmg` será criado na raiz do projeto.
+The `Thunder.dmg` file will be created in the project root.
 
-> **Aviso de Gatekeeper**: como o app não é assinado com Apple Developer ID, ao abrir pela primeira vez o macOS pode exibir *"Thunder não pôde ser aberto porque o desenvolvedor não pode ser verificado"* ou *"Thunder está danificado"*. Para contornar, escolha uma das opções abaixo.
+> **Gatekeeper Warning**: since the app is not signed with an Apple Developer ID, upon opening for the first time macOS may display *"Thunder cannot be opened because the developer cannot be verified"* or *"Thunder is damaged"*. To bypass this, choose one of the options below.
 
-### Opção A — Botão direito (recomendado)
+### Option A — Right-click (recommended)
 
-1. Arraste o `Thunder.app` para `/Aplicativos`.
-2. Clique com o **botão direito** sobre o app → **Abrir**.
-3. No diálogo, clique em **Abrir** novamente.
+1. Drag `Thunder.app` to `/Applications`.
+2. **Right-click** on the app → **Open**.
+3. In the dialog, click **Open** again.
 
-A partir daí o macOS lembra a permissão.
+From then on, macOS remembers the permission.
 
-### Opção B — Remover o atributo de quarentena pelo Terminal
+### Option B — Remove quarantine attribute via Terminal
 
-Se aparecer "está danificado", rode:
+If "is damaged" appears, run:
 
-```
+```bash
 xattr -cr /Applications/Thunder.app
 ```
 
-Depois é só abrir normalmente.
+Then just open it normally.
 
-## Acesso à Lixeira e pastas protegidas
+## Trash and protected folders access
 
-Para acessar a Lixeira ou outras pastas protegidas pelo macOS, conceda **Acesso Total ao Disco** ao `Thunder` em:
-
-```
-Ajustes do Sistema > Privacidade e Segurança > Acesso Total ao Disco
-```
-
-Se o acesso continuar negado mesmo depois de ativar a permissão, feche o app, remova o `Thunder` da lista, adicione novamente o app instalado em `/Applications` e abra o app de novo.
-
-Em alguns casos, pode ser necessário resetar a permissão do macOS com:
+To access the Trash or other macOS protected folders, grant **Full Disk Access** to `Thunder` in:
 
 ```
+System Settings > Privacy & Security > Full Disk Access
+```
+
+If access remains denied even after enabling the permission, close the app, remove `Thunder` from the list, add the installed app in `/Applications` again, and reopen the app.
+
+In some cases, it may be necessary to reset the macOS permission with:
+
+```bash
 tccutil reset SystemPolicyAllFiles com.example.thunder
 ```
 
-Depois do reset, adicione o `Thunder` novamente em **Acesso Total ao Disco**.
+After the reset, add `Thunder` back to **Full Disk Access**.
 
-## Atalhos de teclado
+## Keyboard shortcuts
 
-| Atalho | Ação |
+| Shortcut | Action |
 |---|---|
-| Cmd+C | Copiar |
-| Cmd+X | Recortar |
-| Cmd+V | Colar |
-| Cmd+A | Selecionar tudo |
-| Cmd+T | Nova aba |
-| Cmd+W | Fechar aba |
-| Ctrl+Tab | Próxima aba |
-| Ctrl+Shift+Tab | Aba anterior |
+| Cmd+C | Copy |
+| Cmd+X | Cut |
+| Cmd+V | Paste |
+| Cmd+A | Select all |
+| Cmd+T | New tab |
+| Cmd+W | Close tab |
+| Ctrl+Tab | Next tab |
+| Ctrl+Shift+Tab | Previous tab |
 | Space | Quick Look |
-| Enter | Abrir item (modo ícones) |
-| Setas | Navegar entre itens (modo ícones) |
-| Shift+Setas | Seleção múltipla (modo ícones) |
-| Shift+Clique | Seleção em bloco (modo ícones) |
-| Cmd+Clique | Seleção individual |
-| Cmd+Shift+. | Mostrar/ocultar arquivos ocultos |
-| Cmd+Shift+G | Ir para Pasta... |
-| Cmd+F | Focar no campo de busca |
-| Esc | Limpar busca / Cancelar diálogos |
-| Cmd+, | Abrir Preferências |
-| Letras/Números | Saltar para item pelo nome |
+| Enter | Open item (icon mode) |
+| Arrows | Navigate between items (icon mode) |
+| Shift+Arrows | Multiple selection (icon mode) |
+| Shift+Click | Block selection (icon mode) |
+| Cmd+Click | Individual selection |
+| Cmd+Shift+. | Show/hide hidden files |
+| Cmd+Shift+G | Go to Folder... |
+| Cmd+F | Focus search field |
+| Esc | Clear search / Cancel dialogs |
+| Cmd+, | Open Preferences |
+| Letters/Numbers | Jump to item by name |
 
-## Idiomas
+## Languages
 
-O Thunder oferece suporte nativo a:
+Thunder natively supports:
 
 - **Português (Brasil)**
 - **English**
 - **Español**
 
-O idioma pode ser alterado nas **Preferências (Cmd+,)**, na aba **Geral**. Por padrão, o aplicativo tenta seguir o idioma definido no sistema macOS.
+The language can be changed in **Preferences (Cmd+,)**, under the **General** tab. By default, the application tries to follow the system language defined in macOS.
 
-## Licença
+## License
 
 Copyright (C) 2026 Carlos Felipe Araújo
 
-Distribuído sob a licença **GNU General Public License v3.0** (GPLv3).
-Consulte o arquivo [`LICENSE`](LICENSE) para mais detalhes.
+Distributed under the **GNU General Public License v3.0** (GPLv3).
+See the [`LICENSE`](LICENSE) file for more details.
